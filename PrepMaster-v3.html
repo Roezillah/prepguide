@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepMaster Enterprise v2.5 - Professional Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/"
+  }
+}
+</script>
+    <style>
+      body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: #fcfaff; 
+        margin: 0; 
+        overflow-x: hidden; 
+      }
+      .no-print { @media print { display: none !important; } }
+      @media print {
+        body { -webkit-print-color-adjust: exact; background-color: white; }
+        .print-break-after { page-break-after: always; }
+      }
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+      .animate-shake {
+        animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        animation-iteration-count: 2;
+      }
+      input[type=number]::-webkit-inner-spin-button, 
+      input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; margin: 0; 
+      }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+
+        // --- CONSTANTS & ENUMS ---
+        const PrepStatus = {
+          COOKING: 'COOKING',
+          HEATING: 'HEATING',
+          READY: 'READY',
+          EXPIRING_SOON: 'EXPIRING_SOON',
+          EXPIRED: 'EXPIRED'
+        };
+
+        const COLORS = {
+          accuracy: '#3acfb6', 
+          unplanned: '#4fa8f6', 
+          waste: '#f97fb1', 
+          primary: '#1e293b'
+        };
+
+        const DEFAULT_SETTINGS = { 
+          storeIdentity: '', 
+          numDrops: 6, 
+          openTime: '10:00', 
+          closeTime: '00:00', 
+          profiles: [], 
+          customDropTimes: [] 
+        };
+
+        const INITIAL_TEMPLATES = [
+          { id: 'b1', name: 'Beef (bags)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'b2', name: 'Black Beans (bags)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'b3', name: 'Mexican Rice (batches)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'b4', name: 'Southwest Chicken (bags)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'b5', name: 'Plant Protein', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'r5', name: 'Sour Cream (600ml bottles)', category: 'Dairy', cookTimeMinutes: 0, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'b6', name: 'Guacamole (bags)', category: 'Sides', cookTimeMinutes: 0, holdTimeMinutes: 240, heatingCabinetRequired: false },
+          { id: 'n1', name: 'Nacho Cheese Sauce (bags)', category: 'Protein', cookTimeMinutes: 30, holdTimeMinutes: 480, heatingCabinetRequired: false },
+          { id: 'r1', name: 'Cali Ranch Sauce (sqz)', category: 'Sauces', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
+          { id: 'r2', name: 'Creamy Jalapeno (sqz)', category: 'Sauces', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
+          { id: 'r3', name: 'Hot Lava Sauce (sqz)', category: 'Sauces', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
+          { id: 'r4', name: 'Jalapeños (jars)', category: 'Sides', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
+          { id: 's1', name: 'Taco Shells (rows)', category: 'Shells', cookTimeMinutes: 180, holdTimeMinutes: 1440, heatingCabinetRequired: true },
+          { id: 's2', name: 'Tostada Shells (bags)', category: 'Shells', cookTimeMinutes: 180, holdTimeMinutes: 1440, heatingCabinetRequired: true },
+          { id: 'f1', name: 'Nacho Chips (batches)', category: 'Sides', cookTimeMinutes: 30, holdTimeMinutes: 1440, heatingCabinetRequired: false },
+          { id: 'f2', name: 'Twists (batches)', category: 'Sides', cookTimeMinutes: 30, holdTimeMinutes: 1440, heatingCabinetRequired: false }
+        ];
+
+        // --- UTILS ---
+        const parseTime = (t) => {
+          if (!t) return 0;
+          const [h, m] = t.split(':').map(Number);
+          return (h || 0) * 60 + (m || 0);
+        };
+
+        const formatTime = (mins) => {
+          const positiveMins = (Math.round(mins) % 1440 + 1440) % 1440;
+          const h = Math.floor(positiveMins / 60);
+          const m = positiveMins % 60;
+          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        };
+
+        // --- CORE COMPONENTS ---
+
+        function DonutChart({ percent, color, size = 100, strokeWidth = 10, label, textColor = 'text-[#1e293b]', labelColor = 'text-gray-400' }) {
+          const radius = (size - strokeWidth) / 2;
+          const circumference = 2 * Math.PI * radius;
+          const safePercent = isNaN(percent) ? 0 : Math.max(0, Math.min(100, percent));
+          const offset = circumference - (safePercent / 100) * circumference;
+          return React.createElement('div', { className: 'relative flex flex-col items-center justify-center', style: { width: size, height: size } },
+            React.createElement('svg', { width: size, height: size, className: '-rotate-90' },
+              React.createElement('circle', { cx: size/2, cy: size/2, r: radius, fill: 'transparent', stroke: '#f1f3f7', strokeWidth: strokeWidth }),
+              React.createElement('circle', { 
+                cx: size/2, cy: size/2, r: radius, fill: 'transparent', 
+                stroke: color, strokeWidth: strokeWidth, 
+                strokeDasharray: circumference, strokeDashoffset: offset,
+                strokeLinecap: 'round', className: 'transition-all duration-1000 ease-out'
+              })
+            ),
+            React.createElement('div', { className: 'absolute inset-0 flex flex-col items-center justify-center' },
+              React.createElement('span', { className: `text-xl font-black leading-none ${textColor}` }, Math.round(safePercent) + '%'),
+              label && React.createElement('span', { className: `text-[8px] font-black uppercase tracking-widest mt-1 ${labelColor}` }, label)
+            )
+          );
+        }
+
+        function AreaTrendChart({ data }) {
+          const width = 800, height = 300, padding = 40;
+          const chartHeight = height - padding * 2, chartWidth = width - padding * 2;
+          const baselineY = padding + chartHeight / 2;
+          const points = data.length > 0 ? data : Array(7).fill({ label: '', efficiency: 0, production: 0 });
+          const step = chartWidth / (Math.max(1, points.length - 1));
+
+          const getPath = (field) => {
+            let path = `M ${padding} ${baselineY}`;
+            points.forEach((p, i) => {
+              const x = padding + i * step;
+              const y = baselineY - (p[field] * 5); 
+              path += ` L ${x} ${y}`;
+            });
+            return path;
+          };
+
+          const getAreaPath = (type) => {
+            let path = `M ${padding} ${baselineY}`;
+            points.forEach((p, i) => {
+              const x = padding + i * step;
+              const y = baselineY - (p.efficiency * 5);
+              if (type === 'gain') path += ` L ${x} ${p.efficiency >= 0 ? y : baselineY}`;
+              else path += ` L ${x} ${p.efficiency < 0 ? y : baselineY}`;
+            });
+            path += ` L ${padding + (points.length - 1) * step} ${baselineY} Z`;
+            return path;
+          };
+
+          return React.createElement('div', { className: 'relative w-full overflow-hidden' },
+            React.createElement('svg', { viewBox: `0 0 ${width} ${height}`, className: 'w-full h-auto' },
+              React.createElement('defs', null,
+                React.createElement('linearGradient', { id: 'gainGradient', x1: '0', y1: '0', x2: '0', y2: '1' },
+                  React.createElement('stop', { offset: '0%', stopColor: COLORS.accuracy, stopOpacity: '0.2' }),
+                  React.createElement('stop', { offset: '100%', stopColor: COLORS.accuracy, stopOpacity: '0' })
+                ),
+                React.createElement('linearGradient', { id: 'lossGradient', x1: '0', y1: '0', x2: '0', y2: '1' },
+                  React.createElement('stop', { offset: '0%', stopColor: COLORS.waste, stopOpacity: '0' }),
+                  React.createElement('stop', { offset: '100%', stopColor: COLORS.waste, stopOpacity: '0.2' })
+                )
+              ),
+              [0, 20, 40].map(val => React.createElement(React.Fragment, { key: val },
+                React.createElement('line', { x1: padding, y1: baselineY - val, x2: width - padding, y2: baselineY - val, stroke: '#f1f3f7', strokeDasharray: '4 4' }),
+                React.createElement('line', { x1: padding, y1: baselineY + val, x2: width - padding, y2: baselineY + val, stroke: '#f1f3f7', strokeDasharray: '4 4' })
+              )),
+              React.createElement('line', { x1: padding, y1: baselineY, x2: width - padding, y2: baselineY, stroke: '#f1f3f7', strokeWidth: '2' }),
+              React.createElement('path', { d: getAreaPath('gain'), fill: 'url(#gainGradient)' }),
+              React.createElement('path', { d: getAreaPath('loss'), fill: 'url(#lossGradient)' }),
+              React.createElement('path', { d: getPath('production'), fill: 'none', stroke: COLORS.unplanned, strokeWidth: '2', strokeDasharray: '6 4', strokeLinecap: 'round', strokeLinejoin: 'round', className: 'opacity-60' }),
+              React.createElement('path', { d: getPath('efficiency'), fill: 'none', stroke: '#6366f1', strokeWidth: '3', strokeLinecap: 'round', strokeLinejoin: 'round' }),
+              points.map((p, i) => React.createElement('text', { key: i, x: padding + i * step, y: height - 10, textAnchor: 'middle', className: 'text-[10px] fill-gray-400 font-bold uppercase' }, p.label))
+            )
+          );
+        }
+
+        function TimerCard({ prep, template, onRemove, currentTime }) {
+          const getRemainingTime = () => {
+            const target = (prep.status === PrepStatus.COOKING || prep.status === PrepStatus.HEATING) ? prep.cookEndTime : prep.expiryTime;
+            if (!target) return '00:00:00';
+            const diff = Math.max(0, target - currentTime);
+            const h = Math.floor(diff / (1000 * 60 * 60)), m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)), s = Math.floor((diff % (1000 * 60)) / 1000);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+          };
+          const config = (() => {
+            switch (prep.status) {
+              case PrepStatus.COOKING: return { label: 'PREPARING', accent: 'bg-blue-600', text: 'text-blue-600', border: 'border-blue-100' };
+              case PrepStatus.HEATING: return { label: 'HEATING', accent: 'bg-amber-600', text: 'text-amber-600', border: 'border-amber-100' };
+              case PrepStatus.READY: return { label: 'GOOD', accent: 'bg-[#3acfb6]', text: 'text-[#3acfb6]', border: 'border-emerald-50' };
+              case PrepStatus.EXPIRED: return { label: 'EXPIRED', accent: 'bg-red-600', text: 'text-red-600', border: 'border-red-100' };
+              default: return { label: 'IDLE', accent: 'bg-gray-600', text: 'text-gray-600', border: 'border-gray-100' };
+            }
+          })();
+          return React.createElement('div', { className: `relative flex flex-col h-full bg-white rounded-[2.5rem] border ${config.border} shadow-xl overflow-hidden transition-all hover:scale-[1.02]` },
+            React.createElement('div', { className: `${config.accent} text-white px-8 py-3.5 flex justify-between items-center shadow-inner` },
+              React.createElement('span', { className: 'font-black text-[9px] tracking-[0.3em] uppercase italic' }, config.label + ' deployment'),
+              React.createElement('button', { onClick: onRemove, className: 'hover:bg-black/10 p-1.5 rounded-xl transition-all active:scale-90' }, 
+                React.createElement('svg', { className: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 3, d: 'M6 18L18 6M6 6l12 12' }))
+              )
+            ),
+            React.createElement('div', { className: 'flex-1 p-8 text-center flex flex-col justify-center' },
+              React.createElement('h3', { className: 'text-2xl font-black text-[#1e293b] leading-tight uppercase tracking-tighter italic' }, template.name),
+              React.createElement('div', { className: `text-4xl font-black tabular-nums tracking-tighter italic mt-4 ${config.text}` }, getRemainingTime()),
+              React.createElement('span', { className: 'text-[8px] font-black text-gray-300 tracking-[0.2em] uppercase mt-3' }, 'Remaining Shelf Window')
+            )
+          );
+        }
+
+        function Header({ currentTime, activeTab, setActiveTab }) {
+          const formattedDate = new Date(currentTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+          const NavItem = ({ id, label, svgPath }) => (
+            React.createElement('button', { 
+              onClick: () => setActiveTab(id), 
+              className: `px-4 sm:px-8 py-3 flex items-center gap-3 rounded-[1.5rem] transition-all duration-300 ${activeTab === id ? 'bg-white text-[#1e293b] shadow-xl' : 'text-white/60 hover:text-white'}` 
+            },
+              React.createElement('svg', { className: 'w-5 h-5', fill: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { d: svgPath })),
+              React.createElement('span', { className: 'font-black uppercase text-[10px] tracking-widest hidden md:inline italic' }, label)
+            )
+          );
+          return React.createElement('header', { className: 'bg-[#1e293b] px-6 sm:px-10 py-6 flex flex-col md:flex-row justify-between items-center gap-6 no-print shadow-2xl relative z-[100]' },
+            React.createElement('div', { className: 'flex items-center gap-6' },
+              React.createElement('div', { className: 'bg-white/10 w-12 h-12 rounded-full flex items-center justify-center border border-white/10' }, React.createElement('svg', { className: 'w-6 h-6 text-white', fill: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { d: 'M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z' }))),
+              React.createElement('div', null, React.createElement('h1', { className: 'text-2xl font-black text-white italic uppercase tracking-tighter' }, 'Prep Master'), React.createElement('p', { className: 'text-[9px] font-black text-white/30 uppercase tracking-[0.4em] mt-1' }, formattedDate))
+            ),
+            React.createElement('nav', { className: 'flex gap-2 bg-white/5 p-1 rounded-full border border-white/10 overflow-x-auto no-scrollbar' },
+              React.createElement(NavItem, { id: 'metrics', label: 'Dashboard', svgPath: 'M13,3V9H19V3H13M15,5H17V7H15V5M3,13V19H9V13H3M5,15H7V17H5V15M13,13V19H19V13H13M15,15H17V17H15V15M3,3V9H9V3H3M5,5H7V7H5V5Z' }),
+              React.createElement(NavItem, { id: 'planner', label: 'Planner', svgPath: 'M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5C3.9,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.9 20.1,3 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z' }),
+              React.createElement(NavItem, { id: 'prepguide', label: 'Prep Guide', svgPath: 'M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5C3.34,8 2,9.34 2,11V17H6V21H18V17H22V11C22,9.34 20.66,8 19,8Z' }),
+              React.createElement(NavItem, { id: 'settings', label: 'Config', svgPath: 'M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.97 21.68,8.76L19.68,5.3C19.58,5.09 19.33,5 19.11,5.1L16.62,6.1C16.1,5.71 15.53,5.39 14.92,5.14L14.54,2.48C14.5,2.26 14.3,2.1 14.09,2.1H10.09C9.88,2.1 9.68,2.26 9.64,2.48L9.26,5.14C8.65,5.39 8.08,5.71 7.56,6.1L5.07,5.1C4.85,5 4.6,5.09 4.5,5.3L2.5,8.76C2.38,8.97 2.44,9.22 2.63,9.37L4.74,11.03C4.7,11.34 4.67,11.67 4.67,12C4.67,12.33 4.7,12.65 4.74,12.97L2.63,14.63C2.44,14.78 2.39,15.03 2.49,15.24L4.49,18.7C4.59,18.91 4.84,19 5.06,18.9L7.55,17.9C8.07,18.29 8.64,18.61 9.25,18.86L9.63,21.52C9.67,21.74 9.87,21.9 10.08,21.9H14.08C14.29,21.9 14.49,21.74 14.53,21.52L14.91,18.86C15.52,18.61 16.09,18.29 16.61,17.9L19.1,18.9C19.32,19.57,18.91,19.67,18.7L21.67,15.24C21.77,15.03 21.72,14.78 21.53,14.63L19.43,12.97Z' })
+            )
+          );
+        }
+
+        function Forecasting({ templates, savedSheets, activePreps, onRemovePrep, currentTime, onClearHistory, onDeleteSheet }) {
+          const [pwId, setPwId] = useState(null), [pwInput, setPwInput] = useState(''), [pwError, setPwError] = useState(false), [selectedSheetId, setSelectedSheetId] = useState(null), [timeRange, setTimeRange] = useState('weekly');
+          const sortedSheets = useMemo(() => Array.isArray(savedSheets) ? [...savedSheets].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [], [savedSheets]);
+          
+          const analytics = useMemo(() => {
+            const stats = { totalWaste: 0, totalUnplanned: 0, totalPlanned: 0, totalActual: 0, accuracy: 0, history: [], latest: { planned: 0, unplanned: 0, waste: 0, score: 0 }, insights: { peakWasteDay: 'N/A', peakUnplannedDay: 'N/A', topWastedItems: [], topUnplannedItems: [] } };
+            if (sortedSheets.length === 0) return stats;
+            let filtered = sortedSheets.slice(0, timeRange === 'daily' ? 1 : timeRange === 'weekly' ? 7 : 30);
+            const dayAggregation = {}, itemAggregation = {};
+            filtered.forEach(s => {
+              const date = new Date(s.date), dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+              if (!dayAggregation[dayName]) dayAggregation[dayName] = { waste: 0, unplanned: 0 };
+              dayAggregation[dayName].waste += (s.totalWaste || 0);
+              const planned = s.plan?.reduce((a, b) => a + (b.target || 0), 0) || 0;
+              const unplanned = s.plan?.reduce((a, b) => a + (b.unplanned || 0), 0) || 0;
+              dayAggregation[dayName].unplanned += unplanned;
+              stats.totalPlanned += planned; stats.totalUnplanned += unplanned; stats.totalWaste += (s.totalWaste || 0); stats.totalActual += (s.totalProduced || 0);
+              stats.history.push({ label: date.toLocaleDateString([], { weekday: 'short' }), efficiency: planned > 0 ? ((s.totalProduced - (s.totalWaste || 0) - unplanned) / planned - 1) * 20 : 0, production: planned > 0 ? (s.totalProduced / planned - 1) * 20 : 0 });
+              s.plan?.forEach(p => { if (!itemAggregation[p.templateId]) itemAggregation[p.templateId] = { waste: 0, unplanned: 0 }; itemAggregation[p.templateId].waste += (p.actualWaste || 0); itemAggregation[p.templateId].unplanned += (p.unplanned || 0); });
+            });
+            stats.history.reverse();
+            stats.accuracy = stats.totalPlanned > 0 ? Math.round(((stats.totalActual - stats.totalWaste - stats.totalUnplanned) / stats.totalPlanned) * 100) : 0;
+            let mWaste = -1, mUnplanned = -1;
+            Object.entries(dayAggregation).forEach(([d, v]) => { if (v.waste > mWaste) { mWaste = v.waste; stats.insights.peakWasteDay = d; } if (v.unplanned > mUnplanned) { mUnplanned = v.unplanned; stats.insights.peakUnplannedDay = d; } });
+            stats.insights.topWastedItems = Object.entries(itemAggregation).map(([id, v]) => ({ name: templates.find(t => t.id === id)?.name || id, value: v.waste })).sort((a,b)=>b.value-a.value).slice(0,3).filter(x=>x.value>0);
+            stats.insights.topUnplannedItems = Object.entries(itemAggregation).map(([id, v]) => ({ name: templates.find(t => t.id === id)?.name || id, value: v.unplanned })).sort((a,b)=>b.value-a.value).slice(0,3).filter(x=>x.value>0);
+            
+            const latest = sortedSheets[0];
+            if (latest) {
+              const lp = latest.plan?.reduce((a, b) => a + (b.target || 0), 0) || 0;
+              stats.latest.planned = lp;
+              stats.latest.unplanned = latest.plan?.reduce((a, b) => a + (b.unplanned || 0), 0) || 0;
+              stats.latest.waste = latest.totalWaste || 0;
+              stats.latest.score = lp > 0 ? Math.round(((latest.totalProduced - latest.totalWaste - stats.latest.unplanned) / lp) * 100) : 0;
+            }
+            return stats;
+          }, [sortedSheets, timeRange, templates]);
+
+          const wastePercent = Math.round((analytics.latest.waste / (analytics.latest.planned + analytics.latest.unplanned || 1)) * 100);
+
+          const handlePurge = () => { if (pwInput === 'Livemas') { if (pwId === 'GLOBAL') onClearHistory(); else onDeleteSheet(pwId); setPwId(null); setPwInput(''); setPwError(false); } else { setPwError(true); setTimeout(() => setPwError(false), 800); } };
+
+          return React.createElement('div', { className: 'max-w-[1500px] mx-auto space-y-12 pb-40 pt-4 px-4' },
+            pwId && React.createElement('div', { className: 'fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm' },
+              React.createElement('div', { className: `bg-white rounded-[3rem] p-12 max-w-md w-full text-center ${pwError ? 'animate-shake' : ''}` },
+                React.createElement('h3', { className: 'text-2xl font-black uppercase italic mb-8' }, 'Security Required'),
+                React.createElement('input', { type: 'password', value: pwInput, onChange: e => setPwInput(e.target.value), placeholder: 'PASSWORD', className: 'w-full bg-gray-50 border-2 rounded-[1.5rem] px-8 py-5 text-center font-black text-xl outline-none mb-6', onKeyDown: e => e.key === 'Enter' && handlePurge() }),
+                React.createElement('div', { className: 'flex gap-4' },
+                  React.createElement('button', { onClick: () => setPwId(null), className: 'flex-1 py-4 text-gray-400 font-black uppercase text-[10px]' }, 'Cancel'),
+                  React.createElement('button', { onClick: handlePurge, className: 'flex-1 py-4 bg-red-600 text-white rounded-[1.5rem] font-black uppercase text-[10px]' }, 'Purge')
+                )
+              )
+            ),
+            React.createElement('section', { className: 'bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-sm' },
+              React.createElement('div', { className: 'flex flex-col md:flex-row justify-between items-center mb-12 gap-6' },
+                React.createElement('div', null, React.createElement('h2', { className: 'text-3xl font-black text-[#1e293b] uppercase italic leading-none' }, 'Performance Metrics'), React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase mt-2' }, 'Efficiency Analysis Dashboard')),
+                React.createElement('div', { className: 'flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100' }, ['Daily', 'Weekly', 'Monthly', 'All'].map(t => React.createElement('button', { key: t, onClick: () => setTimeRange(t.toLowerCase()), className: `px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap ${timeRange === t.toLowerCase() ? 'bg-white shadow-lg text-[#6366f1]' : 'text-gray-400 hover:text-gray-600'}` }, t)))
+              ),
+              React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 items-center gap-12' },
+                React.createElement(DonutChart, { percent: analytics.accuracy, color: COLORS.accuracy, size: 180, strokeWidth: 20, label: 'Shift Score' }),
+                React.createElement('div', { className: 'md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-12' },
+                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase block mb-2' }, 'Target Yield'), React.createElement('div', { className: 'text-5xl font-black text-[#1e293b]' }, analytics.totalActual)),
+                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase block mb-2' }, 'Extra Load'), React.createElement('div', { className: 'text-5xl font-black text-blue-500' }, analytics.totalUnplanned)),
+                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase block mb-2' }, 'Waste'), React.createElement('div', { className: 'text-5xl font-black text-pink-500' }, analytics.totalWaste))
+                )
+              )
+            ),
+            
+            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8' },
+              React.createElement('div', { className: 'lg:col-span-4 space-y-8 flex flex-col' },
+                React.createElement('section', { className: 'bg-white rounded-[3rem] shadow-sm border border-gray-100 p-10 flex-1 flex flex-col justify-center' },
+                  React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 italic' }, 'LATEST SHIFT EFFICIENCY'),
+                  React.createElement('div', { className: 'flex items-center gap-10' },
+                    React.createElement(DonutChart, { percent: analytics.latest.score, color: COLORS.accuracy, size: 110, strokeWidth: 14, label: 'Efficiency' }),
+                    React.createElement('div', { className: 'space-y-4' },
+                      React.createElement('div', null, 
+                        React.createElement('div', { className: 'flex items-baseline gap-1' }, 
+                          React.createElement('span', { className: 'text-2xl font-black tabular-nums' }, analytics.latest.planned),
+                          React.createElement('span', { className: 'text-[8px] font-black text-gray-400' }, 'UNITS')
+                        ),
+                        React.createElement('span', { className: 'text-[9px] font-bold text-gray-400 uppercase tracking-widest' }, 'BASELINE PLAN')
+                      ),
+                      React.createElement('div', null, 
+                        React.createElement('div', { className: 'flex items-baseline gap-1' }, 
+                          React.createElement('span', { className: 'text-2xl font-black text-blue-500 tabular-nums' }, analytics.latest.unplanned),
+                          React.createElement('span', { className: 'text-[8px] font-black text-gray-400' }, 'UNITS')
+                        ),
+                        React.createElement('span', { className: 'text-[9px] font-bold text-gray-400 uppercase tracking-widest' }, 'EXTRA LOAD (CAPTURED)')
+                      )
+                    )
+                  )
+                ),
+                React.createElement('section', { className: 'bg-white rounded-[3rem] shadow-sm border border-gray-100 p-10 flex-1 flex flex-col justify-center' },
+                  React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 italic' }, 'LATEST SHIFT WASTE'),
+                  React.createElement('div', { className: 'flex items-center gap-10' },
+                    React.createElement(DonutChart, { percent: wastePercent, color: COLORS.waste, size: 110, strokeWidth: 14, label: 'LOSS %' }),
+                    React.createElement('div', null, 
+                      React.createElement('div', { className: 'flex items-baseline gap-2' }, 
+                        React.createElement('span', { className: 'text-4xl font-black text-pink-500 tabular-nums' }, analytics.latest.waste),
+                        React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase' }, 'UNITS')
+                      ),
+                      React.createElement('span', { className: 'text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2 block' }, 'ENTERPRISE WASTE VOLUME')
+                    )
+                  )
+                )
+              ),
+              React.createElement('section', { className: 'lg:col-span-8 bg-white rounded-[3.5rem] shadow-sm border border-gray-100 p-12 flex flex-col' },
+                React.createElement('h3', { className: 'text-sm font-black text-[#1e293b] uppercase tracking-[0.3em] italic mb-10' }, 'Historical Efficiency Trend'),
+                React.createElement(AreaTrendChart, { data: analytics.history })
+              )
+            ),
+
+            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-8' },
+              React.createElement('div', { className: 'bg-white rounded-[3rem] p-10 shadow-sm border' }, React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase mb-6' }, 'Operational Peaks'), React.createElement('div', { className: 'space-y-4' }, React.createElement('div', null, React.createElement('span', { className: 'text-[8px] font-black text-pink-400 uppercase' }, 'Peak Waste'), React.createElement('div', { className: 'text-2xl font-black italic' }, analytics.insights.peakWasteDay)), React.createElement('div', null, React.createElement('span', { className: 'text-[8px] font-black text-blue-400 uppercase' }, 'Peak Surge'), React.createElement('div', { className: 'text-2xl font-black italic' }, analytics.insights.peakUnplannedDay)))),
+              React.createElement('div', { className: 'bg-white rounded-[3rem] p-10 shadow-sm border' }, React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase mb-6' }, 'Waste Criticality'), React.createElement('div', { className: 'space-y-2' }, analytics.insights.topWastedItems.map((it, i) => React.createElement('div', { key: i, className: 'flex justify-between' }, React.createElement('span', { className: 'text-xs font-black italic' }, it.name), React.createElement('span', { className: 'text-xs font-black text-pink-500' }, it.value))))),
+              React.createElement('div', { className: 'bg-white rounded-[3rem] p-10 shadow-sm border' }, React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase mb-6' }, 'Demand Volatility'), React.createElement('div', { className: 'space-y-2' }, analytics.insights.topUnplannedItems.map((it, i) => React.createElement('div', { key: i, className: 'flex justify-between' }, React.createElement('span', { className: 'text-xs font-black italic' }, it.name), React.createElement('span', { className: 'text-xs font-black text-blue-500' }, it.value)))))
+            ),
+            activePreps.length > 0 && React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-8' }, activePreps.map(p => React.createElement(TimerCard, { key: p.id, prep: p, template: templates.find(t => t.id === p.templateId), onRemove: () => onRemovePrep(p.id), currentTime: currentTime }))),
+            React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-200 overflow-hidden shadow-sm' },
+              React.createElement('div', { className: 'px-12 py-10 bg-gray-50 border-b border-gray-200 flex justify-between items-center' }, React.createElement('h3', { className: 'text-xl font-black uppercase italic' }, 'Audit Registry'), React.createElement('button', { onClick: () => setPwId('GLOBAL'), className: 'bg-red-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg' }, 'Purge Database')),
+              React.createElement('div', { className: 'overflow-x-auto' },
+                React.createElement('table', { className: 'w-full text-left' },
+                  React.createElement('thead', { className: 'text-[10px] font-black text-gray-400 uppercase bg-white border-b' },
+                    React.createElement('tr', null, React.createElement('th', { className: 'px-12 py-8' }, 'Date & Cycle Hash'), React.createElement('th', { className: 'px-6 py-8 text-center' }, 'Score'), React.createElement('th', { className: 'px-6 py-8 text-center' }, 'Yield'), React.createElement('th', { className: 'px-6 py-8 text-center' }, 'Waste'), React.createElement('th', { className: 'px-12 py-8 text-right' }, 'Actions'))
+                  ),
+                  React.createElement('tbody', { className: 'divide-y' }, sortedSheets.map(s => {
+                    const isSel = selectedSheetId === s.id;
+                    const planTotal = s.plan?.reduce((a,b)=>a+(b.target||0),0)||1;
+                    const acc = Math.round(((s.totalProduced - s.totalWaste) / planTotal) * 100);
+                    return React.createElement(React.Fragment, { key: s.id },
+                      React.createElement('tr', { key: s.id, className: `hover:bg-slate-50 cursor-pointer ${isSel ? 'bg-indigo-50/30' : ''}`, onClick: () => setSelectedSheetId(isSel ? null : s.id) },
+                        React.createElement('td', { className: 'px-12 py-8' }, React.createElement('span', { className: 'font-black block uppercase italic' }, s.date), React.createElement('span', { className: 'text-[9px] text-gray-400' }, s.id)),
+                        React.createElement('td', { className: 'px-6 py-8 text-center' }, React.createElement('span', { className: `px-4 py-1.5 rounded-full font-black text-xs ${acc >= 90 ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}` }, acc + '%')),
+                        React.createElement('td', { className: 'px-6 py-8 text-center font-black text-xl' }, s.totalProduced),
+                        React.createElement('td', { className: 'px-6 py-8 text-center font-black text-xl text-pink-500' }, s.totalWaste),
+                        React.createElement('td', { className: 'px-12 py-8 text-right' }, React.createElement('button', { onClick: (e) => { e.stopPropagation(); setPwId(s.id); }, className: 'text-red-400 p-2 hover:bg-red-50 rounded-lg transition-all' }, React.createElement('svg', { className: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { d: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', strokeWidth: 2 }))))
+                      ),
+                      isSel && React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: 'p-12' }, React.createElement('div', { className: 'bg-white rounded-3xl shadow-xl overflow-hidden' }, React.createElement('table', { className: 'w-full text-left' }, React.createElement('thead', { className: 'bg-gray-50 border-b' }, React.createElement('tr', null, React.createElement('th', { className: 'px-8 py-4' }, 'Product'), React.createElement('th', { className: 'px-8 py-4 text-center' }, 'Produced'), React.createElement('th', { className: 'px-8 py-4 text-center' }, 'Waste'))), React.createElement('tbody', null, s.plan.filter(p=>p.actualProduced>0).map(p=>React.createElement('tr', { key: p.templateId }, React.createElement('td', { className: 'px-8 py-4 font-black italic uppercase' }, templates.find(t=>t.id===p.templateId)?.name || p.templateId), React.createElement('td', { className: 'px-8 py-4 text-center font-black text-blue-500' }, p.actualProduced), React.createElement('td', { className: 'px-8 py-4 text-center font-black text-pink-500' }, p.actualWaste))))))))
+                    );
+                  }))
+                )
+              )
+            )
+          );
+        }
+
+        function PrepPlanner({ templates, plan, onUpdatePlan }) {
+          const handleValueChange = (id, field, val) => {
+            const num = parseInt(val) || 0;
+            const exist = plan.find(p => p.templateId === id);
+            let next = exist ? plan.map(p => p.templateId === id ? { ...p, [field]: num, need: Math.max(0, (field === 'target' ? num : p.target) - (field === 'carryOver' ? num : p.carryOver)) } : p) : [...plan, { templateId: id, target: field === 'target' ? num : 0, carryOver: field === 'carryOver' ? num : 0, need: Math.max(0, (field === 'target' ? num : 0) - (field === 'carryOver' ? num : 0)) }];
+            onUpdatePlan(next);
+          };
+          return React.createElement('div', { className: 'max-w-[1500px] mx-auto space-y-12 pb-40 pt-4 px-4' },
+            React.createElement('section', { className: 'bg-[#1e293b] rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden' }, React.createElement('h2', { className: 'text-4xl font-black uppercase italic' }, 'Planner'), React.createElement('p', { className: 'text-[10px] font-black text-indigo-300 uppercase mt-2' }, 'Active Production Cycle')),
+            React.createElement('div', { className: 'bg-white rounded-[3.5rem] border shadow-sm overflow-hidden' },
+              React.createElement('table', { className: 'w-full text-left' },
+                React.createElement('thead', { className: 'text-[10px] font-black text-gray-400 uppercase bg-slate-50 border-b' },
+                  React.createElement('tr', null, React.createElement('th', { className: 'px-12 py-10' }, 'Product'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Daily Target'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Carry Over'), React.createElement('th', { className: 'px-12 py-10 text-right w-48' }, 'Immediate Need'))
+                ),
+                React.createElement('tbody', { className: 'divide-y' }, templates.map(t => {
+                  const p = plan.find(x => x.templateId === t.id) || { target: 0, carryOver: 0, need: 0 };
+                  return React.createElement('tr', { key: t.id, className: 'hover:bg-indigo-50/5' },
+                    React.createElement('td', { className: 'px-12 py-10 font-black text-lg uppercase italic text-[#1e293b]' }, t.name),
+                    React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('input', { type: 'number', value: p.target || '', onChange: e => handleValueChange(t.id, 'target', e.target.value), className: 'w-24 p-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-indigo-300 font-black text-center text-xl outline-none' })),
+                    React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('input', { type: 'number', value: p.carryOver || '', onChange: e => handleValueChange(t.id, 'carryOver', e.target.value), className: 'w-24 p-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-indigo-300 font-black text-center text-xl outline-none' })),
+                    React.createElement('td', { className: 'px-12 py-10 text-right' }, React.createElement('span', { className: `inline-block px-8 py-4 rounded-2xl font-black text-2xl tabular-nums shadow-lg ${p.need > 0 ? 'bg-[#3acfb6] text-white' : 'bg-gray-100 text-gray-300'}` }, p.need))
+                  );
+                }))
+              )
+            )
+          );
+        }
+
+        function PrintGuide({ templates, settings, plan, workbook, onUpdateWorkbook, onSaveSheet, onTransferToSettings }) {
+          const printRef = useRef(null), containerRef = useRef(null);
+          // Standardized to portrait mode as requested
+          const [orientation, setOrientation] = useState('portrait'), [isGenerating, setIsGenerating] = useState(false);
+          const [scale, setScale] = useState(1);
+          const [footerNotes, setFooterNotes] = useState(['', '', '']), [openingMic, setOpeningMic] = useState(''), [closingMic, setClosingMic] = useState('');
+          const dateStr = useMemo(() => new Date().toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(), []);
+          
+          const nDrops = settings.numDrops || 6;
+          const targetWidth = orientation === 'portrait' ? 794 : 1123;
+          const targetHeight = orientation === 'portrait' ? 1123 : 794;
+
+          useLayoutEffect(() => {
+            const updateScale = () => {
+              if (containerRef.current) {
+                const availableWidth = containerRef.current.offsetWidth;
+                const padding = 32; 
+                const effectiveWidth = availableWidth - padding;
+                if (effectiveWidth < targetWidth) setScale(effectiveWidth / targetWidth);
+                else setScale(1);
+              }
+            };
+            updateScale();
+            window.addEventListener('resize', updateScale);
+            return () => window.removeEventListener('resize', updateScale);
+          }, [orientation, targetWidth]);
+
+          const dynamicPrepWindows = useMemo(() => {
+            const n = settings.numDrops || 2;
+            const getBaseMins = (i) => {
+              if (i === 0) return 10 * 60;
+              if (i === 1) return 14 * 60;
+              if (i === 2) return 17 * 60;
+              return (17 * 60) + ((i - 2) * 120);
+            };
+            const times = settings.customDropTimes && settings.customDropTimes.length === n ? settings.customDropTimes : Array.from({ length: n }).map((_, i) => formatTime(getBaseMins(i)));
+            return times.map((t, i) => ({ label: i === 0 ? "MORNING" : i === n-1 ? "FINAL" : `CYCLE 0${i+1}`, time: t, readyTime: formatTime(parseTime(t) + 45) }));
+          }, [settings.numDrops, settings.customDropTimes]);
+
+          const colWidths = useMemo(() => {
+            const totalW = targetWidth - 32;
+            const isPortrait = orientation === 'portrait';
+            if (isPortrait) {
+              const spec = 140, total = 80, log = 120;
+              const segments = nDrops + 1;
+              const segmentWidth = Math.floor((totalW - spec - total - log) / segments);
+              return { spec: totalW - total - log - (segmentWidth * segments), total, drop: segmentWidth, co: segmentWidth, log };
+            }
+            const spec = 340, total = 90, log = 220;
+            const segments = nDrops + 1;
+            const segmentWidth = Math.floor((totalW - spec - total - log) / segments);
+            return { spec: totalW - total - log - (segmentWidth * segmentWidth), total, drop: segmentWidth, co: segmentWidth, log };
+          }, [nDrops, orientation, targetWidth]);
+
+          const handleUpdateLogs = (id, field, value) => {
+            onUpdateWorkbook(prev => {
+               const item = prev[id] || { drops: {}, coChecked: false, waste: '', unplanned: '' };
+               return { ...prev, [id]: { ...item, [field]: value } };
+            });
+          };
+
+          const handleUpdateDrop = (id, idx, field, value) => {
+            onUpdateWorkbook(prev => {
+               const item = prev[id] || { drops: {}, coChecked: false, waste: '', unplanned: '' };
+               const drops = { ...item.drops };
+               drops[idx] = { ...(drops[idx] || { qty: '', checked: false }), [field]: value };
+               return { ...prev, [id]: { ...item, drops } };
+            });
+          };
+
+          const handleToggleCO = (id) => {
+            onUpdateWorkbook(prev => {
+               const item = prev[id] || { drops: {}, coChecked: false, waste: '', unplanned: '' };
+               return { ...prev, [id]: { ...item, coChecked: !item.coChecked } };
+            });
+          };
+
+          const isOnceADay = (t) => {
+            const name = t.name.toUpperCase();
+            return t.category === 'Sauces' || name.includes('TWISTS') || name.includes('CHIPS') || name.includes('SOUR CREAM') || name.includes('GUACAMOLE') || name.includes('JALAPEÑO') || name.includes('JALAPENO');
+          };
+
+          const handleDownloadPDF = async () => {
+            const element = printRef.current;
+            if (!element || isGenerating) return;
+            setIsGenerating(true);
+            try {
+              const clone = element.cloneNode(true);
+              clone.style.width = `${targetWidth}px`;
+              clone.style.transform = 'none'; clone.style.margin = '0'; clone.style.padding = '0';
+              clone.classList.remove('space-y-12'); 
+              const pages = clone.querySelectorAll('.page-container');
+              pages.forEach((pg, i) => { 
+                  pg.style.height = `${targetHeight}px`; pg.style.minHeight = `${targetHeight}px`; pg.style.maxHeight = `${targetHeight}px`;
+                  pg.style.width = `${targetWidth}px`; pg.style.overflow = 'hidden'; pg.style.boxSizing = 'border-box';
+                  pg.classList.remove('rounded-[3rem]', 'shadow-2xl', 'border'); 
+                  if (i < pages.length - 1) pg.style.pageBreakAfter = 'always';
+              });
+              const opt = { margin: 0, filename: `Prep_Guide_${dateStr}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'px', format: [targetWidth, targetHeight], orientation: orientation, compress: true } };
+              await window.html2pdf().set(opt).from(clone).save();
+            } finally { setIsGenerating(false); }
+          };
+
+          const handleSaveAsPresetClick = () => {
+            const targets = {};
+            const drops = {};
+            plan.forEach(p => { if (p.target > 0) targets[p.templateId] = p.target; });
+            Object.entries(workbook).forEach(([tid, data]) => {
+              const itemDrops = {};
+              let hasDrops = false;
+              if (data.drops) {
+                Object.entries(data.drops).forEach(([idx, entry]) => {
+                  if (entry.qty && entry.qty !== '0') {
+                    itemDrops[parseInt(idx)] = entry.qty;
+                    hasDrops = true;
+                  }
+                });
+              }
+              if (hasDrops) drops[tid] = itemDrops;
+            });
+            onTransferToSettings(targets, drops);
+            if (typeof setActiveTab === 'function') { setActiveTab('prepguide'); }
+          };
+
+          const pagesArr = [
+            { title: "MODULE 01: CORE PROTEIN & FRY MATRIX", sections: [{ label: 'RETHERM ITEMS', matcher: t => (t.category === 'Protein' || t.name.includes('Cheese')) && !t.name.includes('Rice') }, { label: 'FRY ITEMS', matcher: t => t.category === 'Shells' || t.name.includes('Chips') || t.name.includes('Twists') }] },
+            { title: "MODULE 02: SECONDARY PREP & SAUCE RECAP", sections: [{ label: 'Bulk Grains (Mexican Rice)', matcher: t => t.name.includes('Rice') }, { label: 'Primary Cold Prep (4H hold time)', matcher: t => t.name.includes('Guacamole') || t.name.includes('Sour Cream') }, { label: 'Sauce Registry (8H hold time)', matcher: t => (t.category === 'Sauces' || t.category === 'Dairy' || t.category === 'Sides') && !t.name.includes('Guacamole') && !t.name.includes('Sour Cream') && !t.name.includes('Chips') && !t.name.includes('Twists') && !t.category.includes('Shells') }] }
+          ];
+
+          return React.createElement('div', { className: 'flex flex-col items-center pb-40 w-full px-2 sm:px-4 pt-4', ref: containerRef },
+            React.createElement('div', { className: 'flex flex-col xl:flex-row gap-6 mb-10 no-print w-full max-w-[1500px] justify-between items-center bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] shadow-sm border border-gray-100' },
+              React.createElement('div', { className: 'text-center xl:text-left' }, 
+                React.createElement('h2', { className: 'text-2xl font-black text-[#1e293b] uppercase italic tracking-tighter' }, 'Prep Guide'), 
+                React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2' }, 'Production Cycle Logs')
+              ),
+              React.createElement('div', { className: 'flex flex-wrap justify-center gap-4' },
+                React.createElement('button', { onClick: handleDownloadPDF, disabled: isGenerating, className: 'bg-[#6366f1] text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 shadow-lg active:scale-95 transition-all' }, 'Generate PDF'),
+                React.createElement('button', { onClick: handleSaveAsPresetClick, className: 'bg-[#2563eb] text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all' }, 'Save to Preset'),
+                React.createElement('button', { onClick: () => { 
+                   const todayISO = new Date().toISOString().split('T')[0];
+                   const finalPlan = templates.map((t) => {
+                     const p = plan.find((x) => x.templateId === t.id) || { target: 0 };
+                     const entry = workbook[t.id];
+                     let prod = 0; if (entry?.drops) Object.values(entry.drops).forEach((d) => prod += (parseInt(d.qty) || 0));
+                     return { templateId: t.id, target: p.target, actualProduced: prod, actualWaste: parseInt(entry?.waste) || 0, unplanned: parseInt(entry?.unplanned) || 0 };
+                   });
+                   onSaveSheet({ id: Date.now().toString(), date: todayISO, storeIdentity: settings.storeIdentity || 'UNIT #0000', plan: finalPlan, totalProduced: finalPlan.reduce((a, b) => a + (b.actualProduced || 0), 0), totalWaste: finalPlan.reduce((a, b) => a + (b.actualWaste || 0), 0) }); 
+                   
+                   // Reset inputs after verification
+                   onUpdateWorkbook(() => ({}));
+                   setFooterNotes(['', '', '']);
+                   setOpeningMic('');
+                   setClosingMic('');
+                   
+                   alert("Audit record stored. Input sheet has been reset for the next cycle."); 
+                }, className: 'bg-[#10b981] text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all' }, 'Verify Shift')
+              )
+            ),
+            React.createElement('div', { 
+              className: 'relative transition-all duration-300 ease-out origin-top flex flex-col items-center',
+              style: { width: targetWidth * scale, height: (targetHeight * pagesArr.length + (pagesArr.length - 1) * 48) * scale }
+            },
+              React.createElement('div', { 
+                ref: printRef, 
+                className: 'flex flex-col space-y-12 print:space-y-0 w-full',
+                style: { width: targetWidth, transform: `scale(${scale})`, transformOrigin: 'top center' }
+              },
+                pagesArr.map((pg, pgIdx) => React.createElement('div', { key: pgIdx, className: `page-container w-full bg-white shadow-2xl rounded-[3rem] border border-gray-300 overflow-hidden flex flex-col ${orientation === 'portrait' ? 'min-h-[1123px] max-h-[1123px]' : 'min-h-[794px] max-h-[794px]'} print-break-after` },
+                  React.createElement('div', { className: 'bg-[#1e293b] text-white flex justify-between items-center p-8 shrink-0' },
+                    React.createElement('div', null, React.createElement('h1', { className: 'text-4xl font-black italic uppercase' }, 'PREP GUIDE'), React.createElement('span', { className: 'text-[10px] uppercase opacity-50 tracking-[0.4em] mt-2 block' }, pg.title)),
+                    React.createElement('div', { className: 'text-right font-black italic tabular-nums uppercase' }, React.createElement('div', null, settings.storeIdentity || 'UNIT #0000'), React.createElement('div', { className: 'text-indigo-400' }, dateStr))
+                  ),
+                  React.createElement('div', { className: 'flex-1 p-4 overflow-hidden' },
+                    React.createElement('table', { className: 'w-full border-collapse table-fixed', style: { width: targetWidth - 32 } },
+                      React.createElement('thead', { className: 'bg-white border-b-2 border-gray-300' },
+                        React.createElement('tr', { className: 'text-[8px] sm:text-[10px] font-black uppercase text-gray-400' },
+                          React.createElement('th', { className: 'px-4 py-4 text-left border-r border-gray-300', style: { width: colWidths.spec } }, 'Specification'),
+                          React.createElement('th', { className: 'p-0 border-r border-gray-300 h-px', style: { width: colWidths.total } }, 
+                            React.createElement('div', { className: 'flex flex-col h-full items-center justify-center p-2' },
+                              React.createElement('div', { className: 'text-[7px] text-indigo-500 font-black uppercase mb-1 leading-none text-center' }, 'PROD'),
+                              React.createElement('div', { className: 'flex-1 w-full flex items-center justify-center bg-[#1e293b] text-white px-1.5 py-1 rounded text-[8px] sm:text-[9px] font-black uppercase shadow-sm mb-0.5 min-h-[18px]' }, 'START'),
+                              React.createElement('div', { className: 'flex-1 w-full flex items-center justify-center bg-emerald-50 text-emerald-700 px-1.5 py-1 rounded border border-emerald-100 text-[8px] sm:text-[9px] font-black uppercase min-h-[18px]' }, 'READY'),
+                              React.createElement('div', { className: 'mt-1.5 text-[9px] sm:text-[11px] text-[#1e293b] font-black italic uppercase tracking-tighter' }, 'TOTAL')
+                            )
+                          ),
+                          dynamicPrepWindows.map((win, i) => React.createElement('th', { key: i, className: 'p-0 border-r border-gray-300 h-px', style: { width: colWidths.drop } },
+                            React.createElement('div', { className: 'flex flex-col h-full items-center justify-center p-1 sm:p-2' },
+                              React.createElement('div', { className: 'text-[6px] text-indigo-500 font-black uppercase mb-1 truncate w-full' }, win.label),
+                              React.createElement('div', { className: 'bg-[#1e293b] text-white px-1 sm:px-2 py-1 rounded text-[8px] sm:text-[9px] w-full text-center' }, win.time),
+                              React.createElement('div', { className: 'bg-emerald-50 text-emerald-700 px-1 sm:px-2 py-1 rounded border border-emerald-200 text-[8px] sm:text-[9px] w-full text-center mt-1' }, win.readyTime),
+                              React.createElement('div', { className: 'grid grid-cols-2 w-full mt-1 text-[5px] sm:text-[7px] text-gray-400 font-black italic border-t border-gray-300 overflow-hidden' }, React.createElement('span', { className: 'truncate' }, 'QTY'), React.createElement('span', { className: 'truncate border-l border-gray-300 italic' }, 'DONE'))
+                            )
+                          )),
+                          React.createElement('th', { className: 'p-0 border-r border-gray-300 h-px', style: { width: colWidths.co } },
+                            React.createElement('div', { className: 'flex flex-col h-full items-center justify-center p-1 sm:p-2' },
+                              React.createElement('div', { className: 'bg-blue-500 text-white px-1 py-2.5 rounded text-[7px] sm:text-[9px] w-full text-center leading-none font-black italic uppercase' }, 'CARRY OVER'),
+                              React.createElement('div', { className: 'grid grid-cols-2 w-full mt-1 text-[5px] sm:text-[7px] text-gray-400 font-black italic border-t border-gray-300 overflow-hidden' }, React.createElement('span', { className: 'truncate' }, 'STOCK'), React.createElement('span', { className: 'truncate border-l border-gray-300 italic' }, 'DONE'))
+                            )
+                          ),
+                          React.createElement('th', { className: 'p-0 h-px', style: { width: colWidths.log } },
+                            React.createElement('div', { className: 'grid grid-cols-2 h-full text-[11px] font-black italic uppercase tracking-tighter' },
+                              React.createElement('div', { className: 'flex items-center justify-center border-r border-gray-300 text-indigo-500' }, 'EXTRA'),
+                              React.createElement('div', { className: 'flex items-center justify-center text-pink-500' }, 'WASTE')
+                            )
+                          )
+                        )
+                      ),
+                      React.createElement('tbody', null, pg.sections.map((section, sIdx) => {
+                        const items = templates.filter(section.matcher);
+                        if (items.length === 0) return null;
+                        return React.createElement(React.Fragment, { key: sIdx },
+                          React.createElement('tr', { className: 'bg-gray-100 border-b border-gray-300' }, React.createElement('td', { colSpan: dynamicPrepWindows.length + 4, className: 'px-6 py-3 font-black text-[#1e293b] text-[11px] uppercase italic tracking-[0.2em]' }, section.label)),
+                          items.map((t) => {
+                            const itemPlan = plan.find((p) => p.templateId === t.id) || { target: 0, carryOver: 0, need: 0 };
+                            const entry = workbook[t.id] || { drops: {}, waste: '', unplanned: '', coChecked: false };
+                            const itemIsOnceADay = isOnceADay(t);
+                            return React.createElement('tr', { key: t.id, className: 'border-b border-gray-300 h-14' },
+                              React.createElement('td', { className: 'px-6 py-1 leading-[1.1] border-r border-gray-200' }, 
+                                React.createElement('span', { className: `block font-black text-[#1e293b] uppercase italic ${orientation === 'portrait' ? 'text-[11px]' : 'text-[13px]'}` }, t.name),
+                                React.createElement('span', { className: 'text-[7px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 block' }, `${t.holdTimeMinutes / 60}H HOLD • ${t.cookTimeMinutes > 0 ? 'RETHERM' : 'INSTANT'}`)
+                              ),
+                              React.createElement('td', { className: 'text-center border-r border-gray-200' }, React.createElement('div', { className: 'flex h-full items-center justify-center font-black text-indigo-600 text-2xl tabular-nums italic pb-1' }, itemPlan.need)),
+                              itemIsOnceADay ? React.createElement('td', { colSpan: dynamicPrepWindows.length, className: 'p-0 border-x border-gray-200 h-px' }, 
+                                React.createElement('div', { onClick: () => handleUpdateDrop(t.id, 0, 'checked', !entry.drops[0]?.checked), className: `h-full w-full flex items-center justify-center cursor-pointer transition-all ${entry.drops[0]?.checked ? 'bg-emerald-50' : 'bg-transparent hover:bg-gray-100'}` },
+                                  React.createElement('div', { className: `text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${entry.drops[0]?.checked ? 'text-emerald-700' : 'text-gray-400'}` }, entry.drops[0]?.checked ? 'COMPLIANT ✓' : 'VERIFY')
+                                )
+                              ) : dynamicPrepWindows.map((_, dIdx) => React.createElement('td', { key: dIdx, className: 'border-x border-gray-200 p-0 h-full' }, 
+                                React.createElement('div', { className: 'grid grid-cols-2 h-full items-center' },
+                                  React.createElement('input', { className: 'w-full h-full text-center font-black text-sm outline-none no-print bg-transparent', placeholder: '0', value: entry.drops[dIdx]?.qty || '', onChange: e => handleUpdateDrop(t.id, dIdx, 'qty', e.target.value) }),
+                                  React.createElement('div', { onClick: () => handleUpdateDrop(t.id, dIdx, 'checked', !entry.drops[dIdx]?.checked), className: `flex h-full items-center justify-center cursor-pointer transition-all text-xl border-l border-gray-200 ${entry.drops[dIdx]?.checked ? 'bg-emerald-100 text-emerald-700' : 'text-gray-200 hover:bg-gray-50'}` }, '✓')
+                                )
+                              )),
+                              React.createElement('td', { className: 'border-r border-gray-200 p-0 bg-blue-50/20' }, 
+                                React.createElement('div', { className: 'grid grid-cols-2 h-full items-center' },
+                                  React.createElement('div', { className: 'text-center font-black text-blue-500 text-lg italic tabular-nums' }, itemPlan.carryOver),
+                                  React.createElement('div', { onClick: () => handleToggleCO(t.id), className: `flex h-full items-center justify-center cursor-pointer text-xl border-l border-gray-200 ${entry.coChecked ? 'bg-blue-100 text-blue-600' : 'text-gray-200 hover:bg-gray-50'}` }, '✓')
+                                )
+                              ),
+                              React.createElement('td', { className: 'p-0 bg-gray-50/20 h-full' }, 
+                                React.createElement('div', { className: 'grid grid-cols-2 h-full items-stretch' },
+                                  React.createElement('input', { className: 'w-full h-full text-center font-black text-indigo-500 text-[14px] bg-transparent outline-none p-0 px-1 border-r border-gray-200', placeholder: '+', value: entry.unplanned, onChange: e => handleUpdateLogs(t.id, 'unplanned', e.target.value) }),
+                                  React.createElement('input', { className: 'w-full h-full text-center font-black text-pink-600 text-[14px] bg-transparent outline-none p-0 px-1', placeholder: '-', value: entry.waste, onChange: e => handleUpdateLogs(t.id, 'waste', e.target.value) })
+                                )
+                              )
+                            );
+                          })
+                        );
+                      }))
+                    )
+                  ),
+                  React.createElement('div', { className: 'bg-gray-50 p-6 border-t-2 border-gray-300 grid grid-cols-2 gap-6 mt-auto shrink-0' },
+                    React.createElement('div', { className: 'bg-white border border-gray-300 p-4 rounded-2xl h-24 shadow-sm flex flex-col justify-between' },
+                      React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest italic' }, 'SHIFT MANAGER NOTES'),
+                      React.createElement('textarea', { className: 'flex-1 bg-transparent border-none outline-none resize-none font-black text-xs text-[#1e293b] uppercase placeholder:text-gray-200 mt-2', value: pgIdx === 0 ? footerNotes[0] : footerNotes[1], onChange: e => { const n = [...footerNotes]; n[pgIdx] = e.target.value; setFooterNotes(n); }, placeholder: 'ENTER SHIFT NOTES...' })
+                    ),
+                    React.createElement('div', { className: 'space-y-4 flex flex-col justify-center' },
+                      React.createElement('div', { className: 'flex items-center gap-4' }, React.createElement('span', { className: 'text-[10px] font-black text-gray-500 uppercase tracking-widest' }, 'OPENING MIC:'), React.createElement('input', { type: 'text', value: openingMic, onChange: e => setOpeningMic(e.target.value), className: 'flex-1 border-b-2 border-gray-400 focus:border-[#1e293b] bg-transparent outline-none font-black text-sm text-[#1e293b] uppercase px-2 h-8 transition-colors' })),
+                      React.createElement('div', { className: 'flex items-center gap-4' }, React.createElement('span', { className: 'text-[10px] font-black text-gray-500 uppercase tracking-widest' }, 'CLOSING MIC:'), React.createElement('input', { type: 'text', value: closingMic, onChange: e => setClosingMic(e.target.value), className: 'flex-1 border-b-2 border-gray-400 focus:border-[#1e293b] bg-transparent outline-none font-black text-sm text-[#1e293b] uppercase px-2 h-8 transition-colors' }))
+                    )
+                  )
+                ))
+              )
+            )
+          );
+        }
+
+        function SettingsComp({ settings, templates, setSettings, onClearHistory, onLoadTargets, pendingTargets, pendingDrops, onClearPendingData }) {
+          const [profileNameInput, setProfileNameInput] = useState('');
+          const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+          const handleChange = (field, val) => {
+            setSettings(prev => ({ ...prev, [field]: val }));
+          };
+
+          const isCloseTimeSet = settings.closeTime && settings.closeTime !== '00:00';
+
+          const calculatedTimes = useMemo(() => {
+            if (!isCloseTimeSet) return [];
+            const n = settings.numDrops || 2;
+            const result = [];
+            const getBaseMins = (i) => {
+              if (i === 0) return 10 * 60;
+              if (i === 1) return 14 * 60;
+              if (i === 2) return 17 * 60;
+              return (17 * 60) + ((i - 2) * 120);
+            };
+            for (let i = 0; i < n; i++) {
+              const totalMins = getBaseMins(i);
+              const h = Math.floor(totalMins / 60) % 24;
+              const m = totalMins % 60;
+              result.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+            }
+            return result;
+          }, [settings.numDrops, settings.closeTime, isCloseTimeSet]);
+
+          useEffect(() => {
+            if (isCloseTimeSet) {
+              setSettings(prev => {
+                const currentCustom = prev.customDropTimes || [];
+                if (currentCustom.length !== prev.numDrops) {
+                  return { ...prev, customDropTimes: undefined };
+                }
+                return prev;
+              });
+            }
+          }, [settings.numDrops, isCloseTimeSet]);
+
+          const handleTimeUpdate = (idx, newTime) => {
+            setSettings(prev => {
+              const times = prev.customDropTimes ? [...prev.customDropTimes] : [...calculatedTimes];
+              times[idx] = newTime;
+              return { ...prev, customDropTimes: times };
+            });
+          };
+
+          const handleSaveProfile = () => {
+            if (!profileNameInput.trim()) return alert("Enter a preset name.");
+            const targetsToSave = pendingTargets || {};
+            const dropsToSave = pendingDrops || undefined;
+            const newProfile = {
+              id: Math.random().toString(36).substring(7),
+              name: profileNameInput.trim(),
+              openTime: settings.openTime,
+              closeTime: settings.closeTime,
+              storeIdentity: settings.storeIdentity || 'UNNAMED UNIT',
+              numDrops: settings.numDrops,
+              targets: targetsToSave,
+              prefilledDrops: dropsToSave,
+              customDropTimes: settings.customDropTimes
+            };
+            setSettings(prev => ({
+              ...prev,
+              profiles: [...(prev.profiles || []), newProfile],
+              activeProfileId: newProfile.id
+            }));
+            setProfileNameInput('');
+            onClearPendingData();
+          };
+
+          const handleLoadProfile = (id) => {
+            const profile = settings.profiles.find(p => p.id === id);
+            if (!profile) return;
+            setSettings(prev => ({
+              ...prev,
+              openTime: profile.openTime,
+              closeTime: profile.closeTime,
+              storeIdentity: profile.storeIdentity || prev.storeIdentity,
+              activeProfileId: profile.id,
+              numDrops: profile.numDrops || 6,
+              customDropTimes: profile.customDropTimes
+            }));
+            if (profile.targets && Object.keys(profile.targets).length > 0) {
+              onLoadTargets(profile.targets);
+            }
+          };
+
+          const executeDelete = (id) => {
+            setSettings(prev => {
+              const updatedProfiles = (prev.profiles || []).filter(p => p.id !== id);
+              return {
+                ...prev,
+                profiles: updatedProfiles,
+                activeProfileId: prev.activeProfileId === id ? undefined : prev.activeProfileId
+              };
+            });
+            setConfirmDeleteId(null);
+          };
+
+          const hasPendingData = pendingTargets || pendingDrops;
+
+          const currentSchedule = useMemo(() => {
+            const times = settings.customDropTimes && settings.customDropTimes.length === settings.numDrops 
+              ? settings.customDropTimes 
+              : calculatedTimes;
+            return times.map((t, i) => {
+              let label = `Drop ${i + 1}`;
+              if (i === 0) label = "Morning";
+              if (i === settings.numDrops - 1) label = "Final";
+              return { label, time: t };
+            });
+          }, [settings.customDropTimes, settings.numDrops, calculatedTimes]);
+
+          const registrySections = [
+            { label: 'High Priority Production (4H)', matcher: (m) => m <= 300, hoursLabel: '4H' },
+            { label: 'Standard Shift Supply (8H)', matcher: (m) => m > 300 && m <= 720, hoursLabel: '8H' },
+            { label: 'Extended Shelf Stability (24H)', matcher: (m) => m > 720, hoursLabel: '24H' }
+          ];
+
+          return React.createElement('div', { className: 'max-w-[1500px] mx-auto space-y-12 pb-40 pt-4' },
+            React.createElement('section', { className: 'bg-[#1e293b] rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden text-white flex flex-col md:flex-row justify-between items-center gap-12' },
+              React.createElement('div', { className: 'absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -mr-48 -mt-48 rounded-full' }),
+              React.createElement('div', { className: 'relative z-10' },
+                React.createElement('h2', { className: 'text-4xl font-black uppercase tracking-tighter italic' }, 'System Configuration'),
+                React.createElement('p', { className: 'text-[11px] font-bold text-indigo-300 uppercase tracking-[0.4em] mt-3' }, 'Global operational & Preset standards'),
+                React.createElement('div', { className: 'flex gap-10 mt-10' },
+                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-indigo-300/60 uppercase block mb-1' }, 'Stored Presets'), React.createElement('span', { className: 'text-3xl font-black tabular-nums' }, (settings.profiles?.length || 0) + ' Kitchens')),
+                  React.createElement('div', { className: 'w-px bg-white/10' }),
+                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-indigo-300/60 uppercase block mb-1' }, 'Shift Window'), React.createElement('span', { className: 'text-3xl font-black text-[#3acfb6] tabular-nums' }, `${settings.openTime} - ${settings.closeTime}`))
+                )
+              )
+            ),
+            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-12 gap-12' },
+              React.createElement('div', { className: 'lg:col-span-8 space-y-12' },
+                React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm p-12' },
+                  React.createElement('div', { className: 'flex items-center gap-4 mb-10' }, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tighter italic' }, 'Restaurant Identity'), React.createElement('div', { className: 'h-px flex-1 bg-gray-50' })),
+                  React.createElement('div', { className: 'space-y-4' },
+                    React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2' }, 'Store Number / Shift Label'),
+                    React.createElement('input', { type: 'text', value: settings.storeIdentity || '', onChange: (e) => handleChange('storeIdentity', e.target.value), placeholder: 'E.G. UNIT #0000', className: 'w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-100 rounded-[2rem] px-10 py-8 font-black text-4xl text-[#1e293b] outline-none uppercase placeholder:text-gray-200 transition-all shadow-sm italic tracking-tighter' })
+                  )
+                ),
+                React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm overflow-hidden' },
+                  React.createElement('div', { className: 'bg-gray-50/80 px-12 py-10 border-b border-gray-100' }, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tight italic' }, 'Operational Parameters'), React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest' }, 'Window timing & Production distribution')),
+                  React.createElement('div', { className: 'p-12 space-y-16' },
+                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-12' },
+                      React.createElement('div', { className: 'space-y-4' }, React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1' }, 'Opening Identity'), React.createElement('input', { type: 'time', value: settings.openTime, onChange: (e) => handleChange('openTime', e.target.value), className: 'w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-100 rounded-2xl px-8 py-5 font-black text-xl text-[#1e293b] outline-none tabular-nums shadow-sm' })),
+                      React.createElement('div', { className: 'space-y-4' }, React.createElement('label', { className: `text-[10px] font-black uppercase tracking-widest ml-1 ${!isCloseTimeSet ? 'text-indigo-500 animate-pulse' : 'text-gray-400'}` }, 'Closing Threshold*'), React.createElement('input', { type: 'time', value: settings.closeTime, onChange: (e) => handleChange('closeTime', e.target.value), className: `w-full border-2 rounded-2xl px-8 py-5 font-black text-xl outline-none tabular-nums transition-all shadow-sm ${!isCloseTimeSet ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-50 border-transparent text-[#1e293b] focus:bg-white focus:border-indigo-100'}` }))
+                    ),
+                    React.createElement('div', { className: 'space-y-10' },
+                      React.createElement('div', { className: 'flex justify-between items-end' }, React.createElement('div', { className: 'space-y-2' }, React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1' }, 'Daily Prep Frequency'), React.createElement('p', { className: 'text-4xl font-black text-[#1e293b] tabular-nums italic tracking-tighter' }, settings.numDrops + ' Cycles')), React.createElement('span', { className: 'text-[10px] font-black bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full border border-indigo-100 uppercase tracking-widest mb-2' }, 'Recommended: 6 Drops')),
+                      React.createElement('div', { className: 'px-2' }, React.createElement('input', { type: 'range', min: '2', max: '10', step: '1', disabled: !isCloseTimeSet, value: settings.numDrops, onChange: (e) => handleChange('numDrops', parseInt(e.target.value)), className: 'w-full h-4 bg-gray-100 rounded-full appearance-none cursor-pointer accent-indigo-600' }))
+                    ),
+                    isCloseTimeSet && React.createElement('div', { className: 'bg-gray-50/50 rounded-[2.5rem] p-10 border border-gray-100 space-y-8' },
+                      React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('h4', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]' }, 'Precision Schedule Editor'), React.createElement('div', { className: 'h-px flex-1 bg-gray-100' })),
+                      React.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6' }, currentSchedule.map((item, idx) => React.createElement('div', { key: idx, className: 'flex flex-col items-center bg-white p-5 rounded-2xl border border-gray-100 shadow-sm focus-within:border-indigo-400 transition-all hover:scale-105 group' }, React.createElement('span', { className: 'text-[8px] font-black uppercase mb-2 text-gray-300 tracking-tighter group-hover:text-indigo-400' }, item.label), React.createElement('input', { type: 'time', value: item.time, onChange: (e) => handleTimeUpdate(idx, e.target.value), className: 'w-full bg-transparent border-none text-center text-sm font-black text-[#1e293b] outline-none tabular-nums cursor-pointer' }))))
+                    )
+                  )
+                )
+              ),
+              React.createElement('div', { className: 'lg:col-span-4 space-y-12' },
+                React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm p-12 flex flex-col h-full' },
+                  React.createElement('div', { className: 'flex justify-between items-center mb-10' }, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tight italic' }, 'Kitchen Presets'), hasPendingData && React.createElement('span', { className: 'bg-pink-50 text-pink-500 border border-pink-100 text-[8px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse' }, 'Pending Data')),
+                  React.createElement('div', { className: 'space-y-6 flex-1' },
+                    React.createElement('div', { className: 'space-y-3' },
+                      React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1' }, 'New Configuration Name'),
+                      React.createElement('div', { className: 'flex flex-col gap-4' },
+                        React.createElement('input', { type: 'text', value: profileNameInput, onChange: (e) => setProfileNameInput(e.target.value), placeholder: 'ENTER NAME...', className: 'w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-100 rounded-2xl px-6 py-4 font-black text-sm text-[#1e293b] outline-none uppercase placeholder:text-gray-200 transition-all' }),
+                        React.createElement('button', { onClick: handleSaveProfile, className: 'w-full py-5 bg-[#1e293b] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-black active:scale-95 transition-all' }, 'Store New Preset')
+                      )
+                    ),
+                    React.createElement('div', { className: 'h-px bg-gray-50 my-10' }),
+                    React.createElement('div', { className: 'space-y-4 custom-scrollbar max-h-[600px] overflow-y-auto pr-2' },
+                      (!settings.profiles || settings.profiles.length === 0) ? React.createElement('div', { className: 'py-20 text-center opacity-30 flex flex-col items-center' }, React.createElement('svg', { className: 'w-10 h-10 mb-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '2.5', d: 'M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01' })), React.createElement('p', { className: 'text-[10px] font-black uppercase tracking-[0.3em]' }, 'No Saved Presets')) :
+                      settings.profiles.map(profile => React.createElement('div', { key: profile.id, className: `flex justify-between items-center p-6 rounded-[2rem] border-2 transition-all group ${settings.activeProfileId === profile.id ? 'border-indigo-500 bg-indigo-50/20' : 'border-gray-50 bg-gray-50/50 hover:border-indigo-100'}` },
+                        React.createElement('div', { className: 'flex flex-col' }, React.createElement('span', { className: 'text-sm font-black uppercase text-[#1e293b] italic tracking-tight' }, profile.name), React.createElement('span', { className: 'text-[9px] font-bold text-gray-400 uppercase mt-1' }, `${profile.numDrops} Drop Configuration`)),
+                        React.createElement('div', { className: 'flex gap-2' },
+                          confirmDeleteId !== profile.id ? React.createElement(React.Fragment, null,
+                            React.createElement('button', { onClick: () => handleLoadProfile(profile.id), className: 'bg-white border border-gray-200 text-[#1e293b] p-3 rounded-xl shadow-sm hover:border-indigo-400 hover:scale-110 transition-all', title: 'Load' }, React.createElement('svg', { className: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '3', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' }))),
+                            React.createElement('button', { onClick: () => setConfirmDeleteId(profile.id), className: 'bg-white border border-gray-200 text-red-400 p-3 rounded-xl shadow-sm hover:border-red-400 hover:scale-110 transition-all', title: 'Delete' }, React.createElement('svg', { className: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '3', d: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' })))
+                          ) : React.createElement('div', { className: 'flex gap-1 animate-in slide-in-from-right-2' },
+                            React.createElement('button', { onClick: () => setConfirmDeleteId(null), className: 'bg-gray-200 text-gray-500 px-3 py-2 rounded-lg text-[8px] font-black uppercase' }, 'Cancel'),
+                            React.createElement('button', { onClick: () => executeDelete(profile.id), className: 'bg-red-600 text-white px-4 py-2 rounded-lg text-[8px] font-black uppercase shadow-lg animate-pulse' }, 'Confirm')
+                          )
+                        )
+                      ))
+                    )
+                  )
+                )
+              )
+            ),
+            React.createElement('div', { className: 'space-y-16 mt-12 animate-in fade-in duration-500' },
+              React.createElement('div', { className: 'flex items-center gap-4 px-4' }, React.createElement('h2', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tighter italic' }, 'Product Registry'), React.createElement('div', { className: 'h-px flex-1 bg-gray-100' })),
+              registrySections.map(section => {
+                const filteredItems = templates.filter(t => section.matcher(t.holdTimeMinutes));
+                if (filteredItems.length === 0) return null;
+                return React.createElement('div', { key: section.hoursLabel, className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm overflow-hidden' },
+                  React.createElement('div', { className: 'bg-gray-50/80 px-12 py-10 border-b border-gray-100 flex justify-between items-center' },
+                    React.createElement('div', null, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tight italic' }, section.label), React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest' }, `${section.hoursLabel} Safety Standards`)),
+                    React.createElement('span', { className: 'bg-white px-6 py-2 rounded-full border border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest shadow-sm' }, `${filteredItems.length} Registry Entries`)
+                  ),
+                  React.createElement('div', { className: 'overflow-x-auto' },
+                    React.createElement('table', { className: 'w-full text-left' },
+                      React.createElement('thead', { className: 'bg-white' }, React.createElement('tr', { className: 'text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]' }, React.createElement('th', { className: 'px-12 py-10' }, 'Product Specification'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Prep Duration'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Hold Standard'))),
+                      React.createElement('tbody', { className: 'divide-y divide-gray-50' }, filteredItems.map(template => {
+                        const holdHours = template.holdTimeMinutes / 60;
+                        const prepDisplay = template.cookTimeMinutes >= 60 ? `${template.cookTimeMinutes / 60}H` : `${template.cookTimeMinutes}M`;
+                        return React.createElement('tr', { key: template.id, className: 'hover:bg-indigo-50/5 transition-colors group' },
+                          React.createElement('td', { className: 'px-12 py-10' }, React.createElement('span', { className: 'block font-black text-[#1e293b] text-lg uppercase leading-tight tracking-tight italic' }, template.name), React.createElement('span', { className: 'text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2 block' }, `Registry Group: ${template.category}`)),
+                          React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('span', { className: 'inline-block px-5 py-2.5 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xs tabular-nums uppercase border border-indigo-100' }, `${prepDisplay} Window`)),
+                          React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('span', { className: 'inline-block px-5 py-2.5 bg-gray-100 text-gray-600 rounded-2xl font-black text-xs tabular-nums uppercase border border-gray-200' }, `${Number.isInteger(holdHours) ? holdHours : holdHours.toFixed(1)}H Safety`))
+                        );
+                      }))
+                    )
+                  )
+                );
+              })
+            ),
+            React.createElement('section', { className: 'bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-sm flex flex-col items-center' },
+              React.createElement('h3', { className: 'text-red-600 font-black uppercase italic mb-4' }, 'Danger Zone'),
+              React.createElement('button', { onClick: onClearHistory, className: 'bg-red-50 text-red-600 px-10 py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-red-100 transition-all' }, 'Purge Entire System History')
+            )
+          );
+        }
+
+        // --- MAIN APPLICATION ---
+
+        function MainApp() {
+          const [activeTab, setActiveTab] = useState('metrics'), [currentTime, setCurrentTime] = useState(Date.now()), [isInitializing, setIsInitializing] = useState(true);
+          const [templates, setTemplates] = useState(INITIAL_TEMPLATES), [settings, setSettings] = useState(DEFAULT_SETTINGS), [plan, setPlan] = useState([]), [activePreps, setActivePreps] = useState([]), [savedSheets, setSavedSheets] = useState([]), [workbookData, setWorkbookData] = useState({});
+          const [pendingTargets, setPendingTargets] = useState(null), [pendingDrops, setPendingDrops] = useState(null);
+
+          useEffect(() => {
+            const load = (k, d) => { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : d; } catch(e) { return d; }};
+            setSettings(load('restaurantSettings', DEFAULT_SETTINGS)); setPlan(load('currentPlan', [])); setActivePreps(load('activePreps', [])); setSavedSheets(load('savedSheets', [])); setWorkbookData(load('workbookData', {}));
+            setIsInitializing(false); const int = setInterval(() => setCurrentTime(Date.now()), 1000); return () => clearInterval(int);
+          }, []);
+
+          useEffect(() => {
+            if (!isInitializing) { localStorage.setItem('restaurantSettings', JSON.stringify(settings)); localStorage.setItem('currentPlan', JSON.stringify(plan)); localStorage.setItem('activePreps', JSON.stringify(activePreps)); localStorage.setItem('savedSheets', JSON.stringify(savedSheets)); localStorage.setItem('workbookData', JSON.stringify(workbookData)); }
+          }, [settings, plan, activePreps, savedSheets, workbookData, isInitializing]);
+
+          const onClearHistory = () => { localStorage.clear(); setSavedSheets([]); setPlan([]); setActivePreps([]); setWorkbookData({}); setSettings(DEFAULT_SETTINGS); setPendingTargets(null); setPendingDrops(null); setActiveTab('metrics'); alert("Purged."); };
+          const onDeleteSheet = (id) => setSavedSheets(prev => prev.filter(x => x.id !== id));
+          const handleTransferToSettings = (targets, drops) => {
+            setPendingTargets(targets);
+            setPendingDrops(drops);
+            setActiveTab('settings');
+          };
+          const handleLoadTargets = (targets) => {
+            const newPlan = templates.map(t => ({
+              templateId: t.id,
+              target: targets[t.id] || 0,
+              carryOver: 0,
+              need: targets[t.id] || 0
+            }));
+            setPlan(newPlan);
+            alert("Pattern Applied to Current Shift.");
+          };
+
+          if (isInitializing) return React.createElement('div', { className: 'min-h-screen bg-[#1e293b] flex items-center justify-center' }, React.createElement('div', { className: 'w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin' }));
+
+          return React.createElement('div', { className: 'min-h-screen flex flex-col' },
+            React.createElement(Header, { currentTime, activeTab, setActiveTab }),
+            React.createElement('main', { className: 'flex-1 p-6 max-w-[1600px] mx-auto w-full' },
+              activeTab === 'metrics' && React.createElement(Forecasting, { templates, savedSheets, activePreps, onRemovePrep: id => setActivePreps(p => p.filter(x => x.id !== id)), currentTime, onClearHistory, onDeleteSheet }),
+              activeTab === 'planner' && React.createElement(PrepPlanner, { templates, plan, onUpdatePlan: setPlan }),
+              activeTab === 'prepguide' && React.createElement(PrintGuide, { templates, settings, plan, workbook: workbookData, onUpdateWorkbook: setWorkbookData, onSaveSheet: s => setSavedSheets(p => [s, ...p]), onTransferToSettings: handleTransferToSettings }),
+              activeTab === 'settings' && React.createElement(SettingsComp, { settings, templates, setSettings, onClearHistory, onLoadTargets: handleLoadTargets, pendingTargets, pendingDrops, onClearPendingData: () => { setPendingTargets(null); setPendingDrops(null); } })
+            )
+          );
+        }
+
+        const rootEl = document.getElementById('root');
+        if (rootEl) createRoot(rootEl).render(React.createElement(MainApp));
+    </script>
+</body>
+</html>
