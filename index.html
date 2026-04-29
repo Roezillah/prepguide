@@ -1,975 +1,1096 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PrepMaster Enterprise v2.5 - Professional Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
-  }
-}
-</script>
-    <style>
-      body { 
-        font-family: 'Inter', sans-serif; 
-        background-color: #fcfaff; 
-        margin: 0; 
-        overflow-x: hidden; 
-      }
-      .no-print { @media print { display: none !important; } }
-      @media print {
-        body { -webkit-print-color-adjust: exact; background-color: white; }
-        .print-break-after { page-break-after: always; }
-      }
-      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        75% { transform: translateX(5px); }
-      }
-      .animate-shake {
-        animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
-        animation-iteration-count: 2;
-      }
-      input[type=number]::-webkit-inner-spin-button, 
-      input[type=number]::-webkit-outer-spin-button { 
-        -webkit-appearance: none; margin: 0; 
-      }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PrepMaster Enterprise</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* Reset everything so Vite/Tailwind host CSS cannot bleed in */
+html,body{all:initial;display:block}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;color:#1e293b;display:block}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;color:#1e293b}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+/* HEADER */
+.header{background:#1e293b;padding:16px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,0.18)}
+.header-logo{display:flex;align-items:center;gap:12px}
+.header-logo-icon{width:40px;height:40px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.1)}
+.header-logo-icon svg{width:22px;height:22px;fill:white}
+.header-title{font-size:20px;font-weight:900;color:white;font-style:italic;text-transform:uppercase;letter-spacing:-0.02em}
+.header-date{font-size:9px;font-weight:900;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.3em;margin-top:2px}
+.header-store{font-size:10px;font-weight:900;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.2em}
+nav{display:flex;background:rgba(255,255,255,0.06);padding:4px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);gap:2px}
+.nav-btn{padding:8px 20px;border-radius:999px;border:none;cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;font-family:inherit;background:transparent;color:rgba(255,255,255,0.5);transition:all 0.2s}
+.nav-btn.active{background:white;color:#1e293b;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+
+/* LAYOUT */
+.main{padding:24px 32px;max-width:1500px;margin:0 auto}
+.tab{display:none !important}
+.tab.active{display:block !important}
+div.tab{display:none !important}
+div.tab.active{display:block !important}
+
+/* CARDS */
+.card{background:white;border-radius:2rem;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.04);overflow:hidden;margin-bottom:20px}
+.card-header{padding:24px 32px;background:#f8fafc;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-size:18px;font-weight:900;color:#1e293b;text-transform:uppercase;font-style:italic}
+.card-header p{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em;margin-top:4px}
+.hero{background:#1e293b;border-radius:2.5rem;padding:40px 48px;margin-bottom:20px;color:white;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:rgba(99,102,241,0.12);border-radius:50%;filter:blur(60px)}
+.hero h2{font-size:36px;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.02em}
+.hero p{font-size:10px;font-weight:900;color:rgba(99,102,241,0.7);text-transform:uppercase;letter-spacing:0.3em;margin-top:6px}
+.hero-stats{display:flex;gap:40px;margin-top:24px}
+.hero-stat span:first-child{display:block;font-size:9px;font-weight:900;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.2em}
+.hero-stat span:last-child{display:block;font-size:28px;font-weight:900;color:#3acfb6;font-style:italic}
+
+/* BUTTONS */
+.btn{padding:10px 22px;border-radius:1rem;border:none;cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;font-family:inherit;transition:all 0.15s;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:#6366f1;color:white}
+.btn-blue{background:#2563eb;color:white}
+.btn-green{background:#10b981;color:white}
+.btn-red{background:#ef4444;color:white}
+.btn-dark{background:#1e293b;color:white}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:white;padding:12px 24px;border-radius:1rem;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none}
+#toast.show{opacity:1}
+
+/* ── DASHBOARD ── */
+.dash-section{background:white;border-radius:2rem;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.04);padding:32px;margin-bottom:20px}
+.dash-section h3{font-size:10px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.25em;font-style:italic;margin-bottom:20px}
+.time-filter{display:flex;background:#f8fafc;padding:4px;border-radius:1rem;border:1px solid #f1f5f9;gap:2px}
+.tf-btn{padding:6px 14px;border-radius:0.75rem;border:none;cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;font-family:inherit;background:transparent;color:#9ca3af;transition:all 0.15s}
+.tf-btn.active{background:white;color:#6366f1;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.big-metrics{display:grid;grid-template-columns:180px 1fr;align-items:center;gap:32px}
+.big-nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+.big-num .val{font-size:48px;font-weight:900;color:#1e293b;line-height:1}
+.big-num .lbl{font-size:8px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em;margin-top:6px}
+.donut-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.donut-wrap .donut-label{position:absolute;text-align:center}
+.donut-wrap .donut-pct{font-size:20px;font-weight:900;color:#1e293b;line-height:1}
+.donut-wrap .donut-sub{font-size:7px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.15em}
+.side-cards{display:grid;grid-template-columns:320px 1fr;gap:16px;margin-bottom:20px}
+.side-card{background:white;border-radius:2rem;border:1px solid #f1f5f9;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+.side-card-inner{display:flex;align-items:center;gap:20px}
+.side-num-lbl{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.15em}
+.insights-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.insight-card{background:white;border-radius:2rem;border:1px solid #f1f5f9;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+.insight-card h3{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em;margin-bottom:16px}
+.insight-item{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.insight-item .iname{font-size:11px;font-weight:900;font-style:italic;color:#1e293b}
+.insight-item .ival{font-size:11px;font-weight:900}
+.audit-table{width:100%;border-collapse:collapse}
+.audit-table thead tr{background:#f8fafc;border-bottom:1px solid #f1f5f9}
+.audit-table th{padding:12px 20px;font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.15em;text-align:left}
+.audit-table th.center,.audit-table td.center{text-align:center}
+.audit-table th.right,.audit-table td.right{text-align:right}
+.audit-table tbody tr.arow{cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background 0.1s}
+.audit-table tbody tr.arow:hover{background:#fafbff}
+.audit-table tbody tr.arow.sel{background:#fafbff}
+.audit-table td{padding:14px 20px;vertical-align:middle}
+.score-badge{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:900}
+.score-hi{background:#ecfdf5;color:#059669}.score-lo{background:#fff7ed;color:#d97706}
+.detail-inner{padding:20px;background:#f8fafc}
+.detail-table{width:100%;border-collapse:collapse;background:white;border-radius:1rem;overflow:hidden}
+.detail-table th{padding:10px 16px;font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;background:#f8fafc;border-bottom:1px solid #f1f5f9}
+.detail-table td{padding:10px 16px;font-size:12px;font-weight:900;font-style:italic;text-transform:uppercase;border-bottom:1px solid #f8fafc}
+.empty-state{text-align:center;padding:48px;color:#d1d5db;font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:0.2em}
+
+/* ── PLANNER ── */
+.plan-table{width:100%;border-collapse:collapse}
+.plan-table thead tr{background:#f8fafc;border-bottom:1px solid #f1f5f9}
+.plan-table th{padding:14px 24px;font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em;text-align:left}
+.plan-table th.center,.plan-table td.center{text-align:center}
+.plan-table th.right,.plan-table td.right{text-align:right}
+.plan-table tbody tr{border-bottom:1px solid #f3f4f6;transition:background 0.1s}
+.plan-table tbody tr:hover{background:#fafbff}
+.plan-table td{padding:10px 24px;vertical-align:middle}
+.plan-input{width:80px;padding:8px;border-radius:12px;background:#f8fafc;border:2px solid transparent;font-weight:900;text-align:center;font-size:14px;outline:none;font-family:inherit;color:#1e293b;transition:border 0.15s}
+.plan-input:focus{border-color:#a5b4fc;background:white}
+.need-badge{display:inline-block;padding:8px 18px;border-radius:12px;font-weight:900;font-size:16px;font-style:italic}
+.need-badge.has{background:#3acfb6;color:white;box-shadow:0 4px 12px rgba(58,207,182,0.3)}
+.need-badge.zero{background:#f1f5f9;color:#cbd5e1}
+
+/* ── PREP GUIDE ── */
+.pg-toolbar{background:white;border-radius:2rem;border:1px solid #f1f5f9;box-shadow:0 4px 20px rgba(0,0,0,0.07);padding:20px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;position:sticky;top:80px;z-index:50}
+.pg-toolbar-left h2{font-size:20px;font-weight:900;color:#1e293b;text-transform:uppercase;font-style:italic}
+.pg-toolbar-left p{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.25em;margin-top:4px}
+.pg-toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mic-area{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:1.2rem;padding:8px 14px}
+.mic-label{font-size:8px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em}
+.mic-btn{padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;font-family:inherit;background:white;border:1px solid #e5e7eb;color:#6b7280;transition:all 0.15s}
+.mic-btn.open-active{background:#1e293b;color:white;border-color:#1e293b;box-shadow:0 2px 8px rgba(30,41,59,0.3)}
+.mic-btn.close-active{background:#6366f1;color:white;border-color:#6366f1;box-shadow:0 2px 8px rgba(99,102,241,0.3)}
+.mic-active-label{font-size:8px;font-weight:900;color:#10b981;text-transform:uppercase;letter-spacing:0.1em;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* Prep Guide page layout */
+.pg-pages{display:flex;flex-direction:column;gap:32px;align-items:center}
+.pg-page{width:794px;min-height:1123px;max-height:1123px;background:white;border-radius:2rem;box-shadow:0 8px 40px rgba(0,0,0,0.12);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column}
+.pg-page-header{background:#1e293b;color:white;padding:28px 32px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.pg-page-header h1{font-size:32px;font-weight:900;font-style:italic;text-transform:uppercase}
+.pg-page-header .sub{font-size:9px;text-transform:uppercase;opacity:0.4;letter-spacing:0.35em;margin-top:4px}
+.pg-page-header .meta{text-align:right;font-weight:900;font-style:italic;text-transform:uppercase}
+.pg-page-header .meta .store{font-size:14px}
+.pg-page-header .meta .date{font-size:14px;color:#818cf8}
+.pg-body{flex:1;padding:12px;overflow:hidden}
+.pg-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.pg-table thead tr{border-bottom:2px solid #e5e7eb}
+.pg-table th{font-size:9px;font-weight:900;text-transform:uppercase;color:#9ca3af;vertical-align:bottom}
+.pg-table th.spec{text-align:left;padding:10px 12px;border-right:1px solid #e5e7eb}
+.pg-table .section-row td{background:#f1f5f9;padding:8px 16px;font-size:10px;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:0.2em;color:#1e293b;border-bottom:1px solid #e5e7eb}
+.pg-table .item-row{border-bottom:1px solid #e5e7eb;height:52px}
+.pg-table .item-row td{vertical-align:middle}
+.item-name{font-size:10px;font-weight:900;text-transform:uppercase;font-style:italic;color:#1e293b}
+.item-sub{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#94a3b8;margin-top:2px}
+.drop-cell{border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;padding:0;height:52px}
+.drop-inner{display:grid;grid-template-columns:1fr 1fr;height:52px}
+.drop-qty{border:none;width:100%;height:100%;text-align:center;font-weight:900;font-size:13px;outline:none;background:transparent;font-family:inherit;color:#1e293b}
+.drop-check{display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;height:100%;border-left:1px solid #e5e7eb;font-size:16px;font-weight:900;color:#d1d5db;transition:all 0.15s}
+.drop-check.done{background:#ecfdf5;color:#059669}
+.drop-check .initials{font-size:9px;font-weight:900;margin-top:2px;line-height:1}
+.co-cell{border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;padding:0}
+.co-inner{display:grid;grid-template-columns:1fr 1fr;height:52px;background:rgba(239,246,255,0.4)}
+.co-val{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#3b82f6;font-style:italic}
+.co-check{display:flex;align-items:center;justify-content:center;cursor:pointer;border-left:1px solid #e5e7eb;font-size:16px;font-weight:900;color:#d1d5db;transition:all 0.15s}
+.co-check.done{background:#3b82f6;color:white}
+.log-cell{padding:0;height:52px}
+.log-inner{display:grid;grid-template-columns:1fr 1fr;height:52px}
+.log-input{border:none;width:100%;height:100%;text-align:center;font-weight:900;font-size:13px;outline:none;background:transparent;font-family:inherit}
+.log-input.extra{color:#6366f1}
+.log-input.waste{color:#f43f5e;border-left:1px solid #e5e7eb}
+.need-val{display:flex;align-items:center;justify-content:center;height:52px;font-size:22px;font-weight:900;font-style:italic;color:#6366f1;border-right:1px solid #e5e7eb}
+.pg-footer{background:#f8fafc;border-top:2px solid #e5e7eb;padding:16px 24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-shrink:0}
+.pg-notes{background:white;border:1px solid #e5e7eb;border-radius:1rem;padding:12px;display:flex;flex-direction:column}
+.pg-notes-label{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em;font-style:italic}
+.pg-notes textarea{flex:1;background:transparent;border:none;outline:none;resize:none;font-weight:900;font-size:11px;color:#1e293b;text-transform:uppercase;font-family:inherit;margin-top:6px}
+.pg-sigs{display:flex;flex-direction:column;justify-content:center;gap:10px}
+.pg-sig-row{display:flex;align-items:center;gap:10px}
+.pg-sig-label{font-size:9px;font-weight:900;color:#6b7280;text-transform:uppercase;letter-spacing:0.15em;white-space:nowrap}
+.pg-sig-input{flex:1;border:none;border-bottom:2px solid #e5e7eb;background:transparent;outline:none;font-weight:900;font-size:13px;color:#1e293b;text-transform:uppercase;font-family:inherit;padding:4px 6px;transition:border-color 0.15s}
+.pg-sig-input:focus{border-color:#1e293b}
+
+/* page scale wrapper */
+.pg-scale-wrapper{transform-origin:top center;transition:transform 0.2s}
+
+/* ── CONFIG / SETTINGS ── */
+.settings-hero{background:#1e293b;border-radius:2.5rem;padding:40px 48px;margin-bottom:20px;color:white;position:relative;overflow:hidden}
+.settings-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:rgba(99,102,241,0.12);border-radius:50%;filter:blur(60px)}
+.settings-hero h2{font-size:32px;font-weight:900;text-transform:uppercase;font-style:italic}
+.settings-hero p{font-size:10px;font-weight:900;color:#818cf8;text-transform:uppercase;letter-spacing:0.3em;margin-top:6px}
+.settings-hero-stats{display:flex;gap:32px;margin-top:24px}
+.settings-hero-stat span:first-child{display:block;font-size:8px;font-weight:900;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.2em}
+.settings-hero-stat span:last-child{display:block;font-size:24px;font-weight:900;color:#3acfb6;font-style:italic}
+.settings-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;margin-bottom:20px}
+.settings-card{background:white;border-radius:2rem;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.04);padding:32px;margin-bottom:20px}
+.settings-card h3{font-size:16px;font-weight:900;color:#1e293b;text-transform:uppercase;font-style:italic;margin-bottom:20px}
+.settings-label{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.25em;display:block;margin-bottom:8px;margin-left:4px}
+.settings-input{width:100%;background:#f8fafc;border:2px solid transparent;border-radius:1.5rem;padding:16px 24px;font-weight:900;font-size:28px;color:#1e293b;outline:none;text-transform:uppercase;font-family:inherit;font-style:italic;transition:all 0.15s}
+.settings-input:focus{background:white;border-color:#e0e7ff}
+.settings-input-sm{width:100%;background:#f8fafc;border:2px solid transparent;border-radius:1rem;padding:12px 20px;font-weight:900;font-size:16px;color:#1e293b;outline:none;font-family:inherit;transition:all 0.15s}
+.settings-input-sm:focus{background:white;border-color:#e0e7ff}
+.drops-display{font-size:36px;font-weight:900;color:#1e293b;font-style:italic}
+.drops-sub{font-size:9px;font-weight:900;background:#ede9fe;color:#6366f1;padding:6px 14px;border-radius:999px;border:1px solid #ddd6fe;text-transform:uppercase;letter-spacing:0.1em}
+.range-slider{width:100%;height:14px;background:#f1f5f9;border-radius:999px;appearance:none;cursor:pointer;accent-color:#6366f1;outline:none}
+.schedule-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-top:8px}
+.schedule-item{background:white;border:1px solid #f1f5f9;border-radius:1rem;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);transition:border-color 0.15s}
+.schedule-item:focus-within{border-color:#a5b4fc}
+.schedule-item .si-label{font-size:7px;font-weight:900;text-transform:uppercase;color:#d1d5db;letter-spacing:0.1em;margin-bottom:6px}
+.schedule-item input[type=time]{width:100%;background:transparent;border:none;outline:none;font-weight:900;font-size:13px;color:#1e293b;font-family:inherit;cursor:pointer;text-align:center}
+.preset-item{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-radius:1.5rem;border:2px solid #f1f5f9;background:#f8fafc;margin-bottom:10px;transition:all 0.15s}
+.preset-item.active-preset{border-color:#6366f1;background:rgba(99,102,241,0.04)}
+.preset-item-info .pname{font-size:13px;font-weight:900;text-transform:uppercase;font-style:italic;color:#1e293b}
+.preset-item-info .psub{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;margin-top:3px}
+.preset-actions{display:flex;gap:6px}
+.preset-btn{background:white;border:1px solid #e5e7eb;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;font-size:14px}
+.preset-btn:hover{border-color:#a5b4fc;transform:scale(1.1)}
+.preset-btn.del:hover{border-color:#f43f5e;color:#f43f5e}
+.confirm-del{display:flex;gap:4px}
+.confirm-del button{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:8px;font-weight:900;text-transform:uppercase;font-family:inherit}
+.confirm-cancel{background:#e5e7eb;color:#6b7280}
+.confirm-ok{background:#ef4444;color:white}
+.product-registry{background:white;border-radius:2rem;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.04);overflow:hidden;margin-bottom:20px}
+.reg-table{width:100%;border-collapse:collapse}
+.reg-table th{padding:14px 28px;font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.25em;background:#f8fafc;border-bottom:1px solid #f1f5f9;text-align:left}
+.reg-table td{padding:18px 28px;border-bottom:1px solid #f8fafc;vertical-align:middle}
+.reg-name{font-size:15px;font-weight:900;text-transform:uppercase;font-style:italic;color:#1e293b}
+.reg-cat{font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.15em;margin-top:4px}
+.reg-badge{display:inline-block;padding:6px 14px;border-radius:1rem;font-size:10px;font-weight:900;text-transform:uppercase}
+.reg-badge.prep{background:#ede9fe;color:#6366f1;border:1px solid #ddd6fe}
+.reg-badge.hold{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
+</style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="module">
-        import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
-        import { createRoot } from 'react-dom/client';
+<header class="header">
+  <div class="header-logo">
+    <div class="header-logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>
+    </div>
+    <div>
+      <div class="header-title">Prep Master</div>
+      <div class="header-date" id="hdr-date"></div>
+    </div>
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('dashboard',this)">Dashboard</button>
+    <button class="nav-btn" onclick="switchTab('planner',this)">Planner</button>
+    <button class="nav-btn" onclick="switchTab('prepguide',this)">Prep Guide</button>
+    <button class="nav-btn" onclick="switchTab('config',this)">Config</button>
+  </nav>
+  <div class="header-store" id="hdr-store"></div>
+</header>
 
-        // --- CONSTANTS & ENUMS ---
-        const PrepStatus = {
-          COOKING: 'COOKING',
-          HEATING: 'HEATING',
-          READY: 'READY',
-          EXPIRING_SOON: 'EXPIRING_SOON',
-          EXPIRED: 'EXPIRED'
-        };
+<div class="main">
 
-        const COLORS = {
-          accuracy: '#3acfb6', 
-          unplanned: '#4fa8f6', 
-          waste: '#f97fb1', 
-          primary: '#1e293b'
-        };
+<!-- ══ DASHBOARD ══ -->
+<div class="tab active" id="tab-dashboard">
+  <div class="hero">
+    <h2>Dashboard</h2>
+    <p>Performance Analytics & Audit Registry</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><span>Total Shifts</span><span id="dash-total-shifts">0</span></div>
+      <div class="hero-stat"><span>Total Produced</span><span id="dash-total-prod">0</span></div>
+      <div class="hero-stat"><span>Total Waste</span><span id="dash-total-waste">0</span></div>
+    </div>
+  </div>
+  <div class="dash-section">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="font-size:22px;font-weight:900;color:#1e293b;text-transform:uppercase;font-style:italic">Performance Metrics</h2>
+        <p style="font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.2em;margin-top:4px">Efficiency Analysis Dashboard</p>
+      </div>
+      <div class="time-filter">
+        <button class="tf-btn active" onclick="setTimeRange('daily',this)">Daily</button>
+        <button class="tf-btn" onclick="setTimeRange('weekly',this)">Weekly</button>
+        <button class="tf-btn" onclick="setTimeRange('monthly',this)">Monthly</button>
+        <button class="tf-btn" onclick="setTimeRange('all',this)">All</button>
+      </div>
+    </div>
+    <div class="big-metrics">
+      <div id="dash-donut-main"></div>
+      <div class="big-nums">
+        <div class="big-num"><div class="val" id="dash-yield">0</div><div class="lbl">Target Yield</div></div>
+        <div class="big-num"><div class="val" style="color:#3b82f6" id="dash-extra">0</div><div class="lbl">Extra Load</div></div>
+        <div class="big-num"><div class="val" style="color:#f43f5e" id="dash-waste">0</div><div class="lbl">Waste</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:20px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="dash-section" style="margin-bottom:0;flex:1">
+        <h3>Latest Shift Efficiency</h3>
+        <div class="side-card-inner">
+          <div id="dash-donut-eff"></div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:24px;font-weight:900" id="dash-lat-plan">0</span><span style="font-size:8px;font-weight:900;color:#9ca3af">UNITS</span></div>
+            <div class="side-num-lbl">Baseline Plan</div>
+            <div style="margin-top:10px;display:flex;align-items:baseline;gap:4px"><span style="font-size:24px;font-weight:900;color:#3b82f6" id="dash-lat-extra">0</span><span style="font-size:8px;font-weight:900;color:#9ca3af">UNITS</span></div>
+            <div class="side-num-lbl">Extra Load</div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-section" style="margin-bottom:0;flex:1">
+        <h3>Latest Shift Waste</h3>
+        <div class="side-card-inner">
+          <div id="dash-donut-waste"></div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:36px;font-weight:900;color:#f43f5e;font-style:italic" id="dash-lat-waste">0</span><span style="font-size:9px;font-weight:900;color:#9ca3af">UNITS</span></div>
+            <div class="side-num-lbl" style="margin-top:4px">Enterprise Waste Volume</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dash-section" style="margin-bottom:0">
+      <h3>Historical Efficiency Trend</h3>
+      <canvas id="dash-trend-canvas" height="160" style="width:100%;display:block"></canvas>
+    </div>
+  </div>
+  <div class="insights-grid">
+    <div class="insight-card">
+      <h3>Operational Peaks</h3>
+      <div style="margin-bottom:12px">
+        <div style="font-size:8px;font-weight:900;color:#f43f5e;text-transform:uppercase;letter-spacing:0.1em">Peak Waste</div>
+        <div style="font-size:22px;font-weight:900;font-style:italic" id="dash-peak-waste">N/A</div>
+      </div>
+      <div>
+        <div style="font-size:8px;font-weight:900;color:#3b82f6;text-transform:uppercase;letter-spacing:0.1em">Peak Surge</div>
+        <div style="font-size:22px;font-weight:900;font-style:italic" id="dash-peak-surge">N/A</div>
+      </div>
+    </div>
+    <div class="insight-card"><h3>Waste Criticality</h3><div id="dash-top-waste"><div class="empty-state" style="padding:16px;font-size:9px">No data</div></div></div>
+    <div class="insight-card"><h3>Demand Volatility</h3><div id="dash-top-unplanned"><div class="empty-state" style="padding:16px;font-size:9px">No data</div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div><h3>Audit Registry</h3><p>Full shift history</p></div>
+      <button class="btn btn-red" onclick="clearHistory()" style="font-size:9px;padding:8px 18px">Purge Database</button>
+    </div>
+    <div style="overflow-x:auto" id="dash-audit"></div>
+  </div>
+</div>
 
-        const DEFAULT_SETTINGS = { 
-          storeIdentity: '', 
-          numDrops: 6, 
-          openTime: '10:00', 
-          closeTime: '00:00', 
-          profiles: [], 
-          customDropTimes: [] 
-        };
+<!-- ══ PLANNER ══ -->
+<div class="tab" id="tab-planner">
+  <div class="hero">
+    <h2>Planner</h2>
+    <p>Active Production Cycle</p>
+  </div>
+  <div class="card">
+    <table class="plan-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th class="center">Daily Target</th>
+          <th class="center">Carry Over</th>
+          <th class="right" style="padding-right:32px">Immediate Need</th>
+        </tr>
+      </thead>
+      <tbody id="plan-tbody"></tbody>
+    </table>
+  </div>
+</div>
 
-        const INITIAL_TEMPLATES = [
-          { id: 'b1', name: 'Beef (bags)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'b2', name: 'Black Beans (bags)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'b3', name: 'Mexican Rice (batches)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'b4', name: 'Southwest Chicken (bags)', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'b5', name: 'Plant Protein', category: 'Protein', cookTimeMinutes: 45, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'r5', name: 'Sour Cream (600ml bottles)', category: 'Dairy', cookTimeMinutes: 0, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'b6', name: 'Guacamole (bags)', category: 'Sides', cookTimeMinutes: 0, holdTimeMinutes: 240, heatingCabinetRequired: false },
-          { id: 'n1', name: 'Nacho Cheese Sauce (bags)', category: 'Protein', cookTimeMinutes: 30, holdTimeMinutes: 480, heatingCabinetRequired: false },
-          { id: 'r1', name: 'Cali Ranch Sauce (sqz)', category: 'Sauces', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
-          { id: 'r2', name: 'Creamy Jalapeno (sqz)', category: 'Sauces', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
-          { id: 'r3', name: 'Hot Lava Sauce (sqz)', category: 'Sauces', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
-          { id: 'r4', name: 'Jalapeños (jars)', category: 'Sides', cookTimeMinutes: 0, holdTimeMinutes: 480, heatingCabinetRequired: false },
-          { id: 's1', name: 'Taco Shells (rows)', category: 'Shells', cookTimeMinutes: 180, holdTimeMinutes: 1440, heatingCabinetRequired: true },
-          { id: 's2', name: 'Tostada Shells (bags)', category: 'Shells', cookTimeMinutes: 180, holdTimeMinutes: 1440, heatingCabinetRequired: true },
-          { id: 'f1', name: 'Nacho Chips (batches)', category: 'Sides', cookTimeMinutes: 30, holdTimeMinutes: 1440, heatingCabinetRequired: false },
-          { id: 'f2', name: 'Twists (batches)', category: 'Sides', cookTimeMinutes: 30, holdTimeMinutes: 1440, heatingCabinetRequired: false }
-        ];
+<!-- ══ PREP GUIDE ══ -->
+<div class="tab" id="tab-prepguide">
+  <div class="pg-toolbar">
+    <div class="pg-toolbar-left">
+      <h2>Prep Guide</h2>
+      <p>Production Cycle Logs</p>
+    </div>
+    <div class="pg-toolbar-right">
+      <div class="mic-area">
+        <span class="mic-label">Active Mic:</span>
+        <button class="mic-btn" id="mic-open-btn" onclick="toggleMic('opening')">OPEN MIC</button>
+        <button class="mic-btn" id="mic-close-btn" onclick="toggleMic('closing')">CLOSE MIC</button>
+        <span class="mic-active-label" id="mic-active-label" style="display:none"></span>
+      </div>
+      <button class="btn btn-primary" id="gen-pdf-btn" onclick="generatePDF()">Generate PDF</button>
+      <button class="btn btn-blue" onclick="saveToPreset()">Save to Preset</button>
+      <button class="btn btn-green" onclick="verifyDay()">Verify Day</button>
+    </div>
+  </div>
+  <div id="pg-pages-wrap" style="display:flex;flex-direction:column;align-items:center;gap:32px;padding-bottom:60px"></div>
+</div>
 
-        // --- UTILS ---
-        const parseTime = (t) => {
-          if (!t) return 0;
-          const [h, m] = t.split(':').map(Number);
-          return (h || 0) * 60 + (m || 0);
-        };
+<!-- ══ CONFIG ══ -->
+<div class="tab" id="tab-config">
+  <div class="settings-hero">
+    <div style="position:relative;z-index:1">
+      <h2>System Configuration</h2>
+      <p>Global Operational & Preset Standards</p>
+      <div class="settings-hero-stats">
+        <div class="settings-hero-stat"><span>Stored Presets</span><span id="cfg-preset-count">0 Kitchens</span></div>
+        <div class="settings-hero-stat"><span>Shift Window</span><span id="cfg-shift-window">—</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="settings-grid">
+    <div>
+      <div class="settings-card">
+        <h3>Restaurant Identity</h3>
+        <label class="settings-label">Store Number / Shift Label</label>
+        <input class="settings-input" type="text" id="cfg-store" placeholder="E.G. UNIT #0000" oninput="appState.settings.storeIdentity=this.value;save();updateHeader()" />
+      </div>
+      <div class="settings-card">
+        <h3>Operational Parameters</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px">
+          <div>
+            <label class="settings-label">Opening Time</label>
+            <input class="settings-input-sm" type="time" id="cfg-open" oninput="appState.settings.openTime=this.value;save();renderSchedule()" />
+          </div>
+          <div>
+            <label class="settings-label">Closing Threshold</label>
+            <input class="settings-input-sm" type="time" id="cfg-close" oninput="appState.settings.closeTime=this.value;save();renderSchedule()" />
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px">
+          <div>
+            <label class="settings-label">Daily Prep Frequency</label>
+            <div class="drops-display"><span id="cfg-drops-val">6</span> Cycles</div>
+          </div>
+          <span class="drops-sub">Recommended: 6 Drops</span>
+        </div>
+        <input class="range-slider" type="range" min="2" max="10" step="1" id="cfg-drops-range" oninput="onDropsChange(this.value)" style="margin-bottom:20px"/>
+        <div id="cfg-schedule-wrap"></div>
+      </div>
+    </div>
+    <div>
+      <div class="settings-card" style="height:100%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="margin-bottom:0">Kitchen Presets</h3>
+          <span id="cfg-pending-badge" style="display:none;background:#fdf2f8;color:#ec4899;border:1px solid #fce7f3;font-size:8px;font-weight:900;padding:4px 10px;border-radius:999px;text-transform:uppercase">Pending Data</span>
+        </div>
+        <label class="settings-label">New Configuration Name</label>
+        <input class="settings-input-sm" type="text" id="cfg-preset-name" placeholder="ENTER NAME..." style="margin-bottom:12px;text-transform:uppercase"/>
+        <button class="btn btn-dark" onclick="savePreset()" style="width:100%;padding:14px;margin-bottom:20px;letter-spacing:0.15em">Store New Preset</button>
+        <div style="height:1px;background:#f1f5f9;margin-bottom:16px"></div>
+        <div id="cfg-presets-list" style="max-height:500px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-bottom:12px"><h2 style="font-size:18px;font-weight:900;color:#1e293b;text-transform:uppercase;font-style:italic">Product Registry</h2></div>
+  <div id="cfg-registry"></div>
+  <div class="settings-card" style="text-align:center;margin-top:20px">
+    <h3 style="color:#ef4444;margin-bottom:12px">Danger Zone</h3>
+    <button class="btn btn-red" onclick="clearHistory()" style="font-size:9px">Purge Entire System History</button>
+  </div>
+</div>
 
-        const formatTime = (mins) => {
-          const positiveMins = (Math.round(mins) % 1440 + 1440) % 1440;
-          const h = Math.floor(positiveMins / 60);
-          const m = positiveMins % 60;
-          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-        };
+</div><!-- /main -->
 
-        // --- CORE COMPONENTS ---
+<div id="toast"></div>
 
-        function DonutChart({ percent, color, size = 100, strokeWidth = 10, label, textColor = 'text-[#1e293b]', labelColor = 'text-gray-400' }) {
-          const radius = (size - strokeWidth) / 2;
-          const circumference = 2 * Math.PI * radius;
-          const safePercent = isNaN(percent) ? 0 : Math.max(0, Math.min(100, percent));
-          const offset = circumference - (safePercent / 100) * circumference;
-          return React.createElement('div', { className: 'relative flex flex-col items-center justify-center', style: { width: size, height: size } },
-            React.createElement('svg', { width: size, height: size, className: '-rotate-90' },
-              React.createElement('circle', { cx: size/2, cy: size/2, r: radius, fill: 'transparent', stroke: '#f1f3f7', strokeWidth: strokeWidth }),
-              React.createElement('circle', { 
-                cx: size/2, cy: size/2, r: radius, fill: 'transparent', 
-                stroke: color, strokeWidth: strokeWidth, 
-                strokeDasharray: circumference, strokeDashoffset: offset,
-                strokeLinecap: 'round', className: 'transition-all duration-1000 ease-out'
-              })
-            ),
-            React.createElement('div', { className: 'absolute inset-0 flex flex-col items-center justify-center' },
-              React.createElement('span', { className: `text-xl font-black leading-none ${textColor}` }, Math.round(safePercent) + '%'),
-              label && React.createElement('span', { className: `text-[8px] font-black uppercase tracking-widest mt-1 ${labelColor}` }, label)
-            )
-          );
-        }
+<script>
+// ══════════════════════ DATA ══════════════════════
+const TEMPLATES = [
+  {id:'b1',name:'Beef (bags)',category:'Protein',cookTimeMinutes:45,holdTimeMinutes:240},
+  {id:'b2',name:'Black Beans (bags)',category:'Protein',cookTimeMinutes:45,holdTimeMinutes:240},
+  {id:'b4',name:'Southwest Chicken (bags)',category:'Protein',cookTimeMinutes:45,holdTimeMinutes:240},
+  {id:'b5',name:'Plant Protein',category:'Protein',cookTimeMinutes:45,holdTimeMinutes:240},
+  {id:'n1',name:'Nacho Cheese Sauce (bags)',category:'Protein',cookTimeMinutes:30,holdTimeMinutes:480},
+  {id:'s1',name:'Taco Shells (rows)',category:'Shells',cookTimeMinutes:180,holdTimeMinutes:1440},
+  {id:'s2',name:'Tostada Shells (bags)',category:'Shells',cookTimeMinutes:180,holdTimeMinutes:1440},
+  {id:'f1',name:'Nacho Chips (batches)',category:'Sides',cookTimeMinutes:30,holdTimeMinutes:1440},
+  {id:'f2',name:'Twists (batches)',category:'Sides',cookTimeMinutes:30,holdTimeMinutes:1440},
+  {id:'b3',name:'Mexican Rice (batches)',category:'Protein',cookTimeMinutes:45,holdTimeMinutes:240},
+  {id:'b6',name:'Guacamole (bags)',category:'Sides',cookTimeMinutes:0,holdTimeMinutes:240},
+  {id:'r5',name:'Sour Cream (600ml bottles)',category:'Dairy',cookTimeMinutes:0,holdTimeMinutes:240},
+  {id:'r1',name:'Cali Ranch Sauce (sqz)',category:'Sauces',cookTimeMinutes:0,holdTimeMinutes:480},
+  {id:'r2',name:'Creamy Jalapeno (sqz)',category:'Sauces',cookTimeMinutes:0,holdTimeMinutes:480},
+  {id:'r3',name:'Hot Lava Sauce (sqz)',category:'Sauces',cookTimeMinutes:0,holdTimeMinutes:480},
+  {id:'r4',name:'Jalapeños (jars)',category:'Sides',cookTimeMinutes:0,holdTimeMinutes:480},
+];
 
-        function AreaTrendChart({ data }) {
-          const width = 800, height = 300, padding = 40;
-          const chartHeight = height - padding * 2, chartWidth = width - padding * 2;
-          const baselineY = padding + chartHeight / 2;
-          const points = data.length > 0 ? data : Array(7).fill({ label: '', efficiency: 0, production: 0 });
-          const step = chartWidth / (Math.max(1, points.length - 1));
+const PAGES_CFG = [
+  {title:'MODULE 01: CORE PROTEIN & FRY MATRIX', sections:[
+    {label:'RETHERM ITEMS', matcher:t=>(t.category==='Protein'||t.name.includes('Cheese'))&&!t.name.includes('Rice')},
+    {label:'FRY ITEMS', matcher:t=>t.category==='Shells'||t.name.includes('Chips')||t.name.includes('Twists')}
+  ]},
+  {title:'MODULE 02: SECONDARY PREP & SAUCE RECAP', sections:[
+    {label:'Bulk Grains (Mexican Rice)', matcher:t=>t.name.includes('Rice')},
+    {label:'Primary Cold Prep (4H hold time)', matcher:t=>t.name.includes('Guacamole')||t.name.includes('Sour Cream')},
+    {label:'Sauce Registry (8H hold time)', matcher:t=>(t.category==='Sauces'||t.category==='Dairy'||t.category==='Sides')&&!t.name.includes('Guacamole')&&!t.name.includes('Sour Cream')&&!t.name.includes('Chips')&&!t.name.includes('Twists')&&t.category!=='Shells'}
+  ]}
+];
 
-          const getPath = (field) => {
-            let path = `M ${padding} ${baselineY}`;
-            points.forEach((p, i) => {
-              const x = padding + i * step;
-              const y = baselineY - (p[field] * 5); 
-              path += ` L ${x} ${y}`;
-            });
-            return path;
-          };
+// ══════════════════════ STATE ══════════════════════
+let appState = {
+  settings:{storeIdentity:'',numDrops:6,openTime:'10:00',closeTime:'00:00',customDropTimes:[],profiles:[],activeProfileId:null},
+  plan:[],
+  workbook:{}, // {[templateId]: {drops:{[idx]:{qty,checked,initials}}, coChecked, waste, unplanned}}
+  sheets:[],
+  openingMic:'',
+  closingMic:'',
+  activeMic:null,
+  footerNotes:['',''],
+  pendingTargets:null,
+  pendingDrops:null
+};
 
-          const getAreaPath = (type) => {
-            let path = `M ${padding} ${baselineY}`;
-            points.forEach((p, i) => {
-              const x = padding + i * step;
-              const y = baselineY - (p.efficiency * 5);
-              if (type === 'gain') path += ` L ${x} ${p.efficiency >= 0 ? y : baselineY}`;
-              else path += ` L ${x} ${p.efficiency < 0 ? y : baselineY}`;
-            });
-            path += ` L ${padding + (points.length - 1) * step} ${baselineY} Z`;
-            return path;
-          };
+function save(){localStorage.setItem('prepmaster_v2',JSON.stringify(appState))}
+function load(){const d=localStorage.getItem('prepmaster_v2');if(d)try{appState=JSON.parse(d)}catch(e){}}
 
-          return React.createElement('div', { className: 'relative w-full overflow-hidden' },
-            React.createElement('svg', { viewBox: `0 0 ${width} ${height}`, className: 'w-full h-auto' },
-              React.createElement('defs', null,
-                React.createElement('linearGradient', { id: 'gainGradient', x1: '0', y1: '0', x2: '0', y2: '1' },
-                  React.createElement('stop', { offset: '0%', stopColor: COLORS.accuracy, stopOpacity: '0.2' }),
-                  React.createElement('stop', { offset: '100%', stopColor: COLORS.accuracy, stopOpacity: '0' })
-                ),
-                React.createElement('linearGradient', { id: 'lossGradient', x1: '0', y1: '0', x2: '0', y2: '1' },
-                  React.createElement('stop', { offset: '0%', stopColor: COLORS.waste, stopOpacity: '0' }),
-                  React.createElement('stop', { offset: '100%', stopColor: COLORS.waste, stopOpacity: '0.2' })
-                )
-              ),
-              [0, 20, 40].map(val => React.createElement(React.Fragment, { key: val },
-                React.createElement('line', { x1: padding, y1: baselineY - val, x2: width - padding, y2: baselineY - val, stroke: '#f1f3f7', strokeDasharray: '4 4' }),
-                React.createElement('line', { x1: padding, y1: baselineY + val, x2: width - padding, y2: baselineY + val, stroke: '#f1f3f7', strokeDasharray: '4 4' })
-              )),
-              React.createElement('line', { x1: padding, y1: baselineY, x2: width - padding, y2: baselineY, stroke: '#f1f3f7', strokeWidth: '2' }),
-              React.createElement('path', { d: getAreaPath('gain'), fill: 'url(#gainGradient)' }),
-              React.createElement('path', { d: getAreaPath('loss'), fill: 'url(#lossGradient)' }),
-              React.createElement('path', { d: getPath('production'), fill: 'none', stroke: COLORS.unplanned, strokeWidth: '2', strokeDasharray: '6 4', strokeLinecap: 'round', strokeLinejoin: 'round', className: 'opacity-60' }),
-              React.createElement('path', { d: getPath('efficiency'), fill: 'none', stroke: '#6366f1', strokeWidth: '3', strokeLinecap: 'round', strokeLinejoin: 'round' }),
-              points.map((p, i) => React.createElement('text', { key: i, x: padding + i * step, y: height - 10, textAnchor: 'middle', className: 'text-[10px] fill-gray-400 font-bold uppercase' }, p.label))
-            )
-          );
-        }
+// ══════════════════════ HELPERS ══════════════════════
+function parseTime(t){if(!t)return 0;const[h,m]=t.split(':').map(Number);return(h||0)*60+(m||0)}
+function formatTime(mins){const p=(Math.round(mins)%1440+1440)%1440;const h=Math.floor(p/60),m=p%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}
+function isOnceADay(t){const n=t.name.toUpperCase();return t.category==='Sauces'||n.includes('TWISTS')||n.includes('CHIPS')||n.includes('SOUR CREAM')||n.includes('GUACAMOLE')||n.includes('JALAP')}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800)}
 
-        function TimerCard({ prep, template, onRemove, currentTime }) {
-          const getRemainingTime = () => {
-            const target = (prep.status === PrepStatus.COOKING || prep.status === PrepStatus.HEATING) ? prep.cookEndTime : prep.expiryTime;
-            if (!target) return '00:00:00';
-            const diff = Math.max(0, target - currentTime);
-            const h = Math.floor(diff / (1000 * 60 * 60)), m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)), s = Math.floor((diff % (1000 * 60)) / 1000);
-            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-          };
-          const config = (() => {
-            switch (prep.status) {
-              case PrepStatus.COOKING: return { label: 'PREPARING', accent: 'bg-blue-600', text: 'text-blue-600', border: 'border-blue-100' };
-              case PrepStatus.HEATING: return { label: 'HEATING', accent: 'bg-amber-600', text: 'text-amber-600', border: 'border-amber-100' };
-              case PrepStatus.READY: return { label: 'GOOD', accent: 'bg-[#3acfb6]', text: 'text-[#3acfb6]', border: 'border-emerald-50' };
-              case PrepStatus.EXPIRED: return { label: 'EXPIRED', accent: 'bg-red-600', text: 'text-red-600', border: 'border-red-100' };
-              default: return { label: 'IDLE', accent: 'bg-gray-600', text: 'text-gray-600', border: 'border-gray-100' };
-            }
-          })();
-          return React.createElement('div', { className: `relative flex flex-col h-full bg-white rounded-[2.5rem] border ${config.border} shadow-xl overflow-hidden transition-all hover:scale-[1.02]` },
-            React.createElement('div', { className: `${config.accent} text-white px-8 py-3.5 flex justify-between items-center shadow-inner` },
-              React.createElement('span', { className: 'font-black text-[9px] tracking-[0.3em] uppercase italic' }, config.label + ' deployment'),
-              React.createElement('button', { onClick: onRemove, className: 'hover:bg-black/10 p-1.5 rounded-xl transition-all active:scale-90' }, 
-                React.createElement('svg', { className: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 3, d: 'M6 18L18 6M6 6l12 12' }))
-              )
-            ),
-            React.createElement('div', { className: 'flex-1 p-8 text-center flex flex-col justify-center' },
-              React.createElement('h3', { className: 'text-2xl font-black text-[#1e293b] leading-tight uppercase tracking-tighter italic' }, template.name),
-              React.createElement('div', { className: `text-4xl font-black tabular-nums tracking-tighter italic mt-4 ${config.text}` }, getRemainingTime()),
-              React.createElement('span', { className: 'text-[8px] font-black text-gray-300 tracking-[0.2em] uppercase mt-3' }, 'Remaining Shelf Window')
-            )
-          );
-        }
+function getDropWindows(){
+  const n=appState.settings.numDrops||6;
+  const custom=appState.settings.customDropTimes;
+  if(custom&&custom.length===n){
+    return custom.map((t,i)=>({label:i===0?'MORNING':i===n-1?'FINAL':`CYCLE 0${i+1}`,time:t,readyTime:formatTime(parseTime(t)+45)}));
+  }
+  const openMins=parseTime(appState.settings.openTime||'10:00');
+  const rawClose=parseTime(appState.settings.closeTime||'00:00')||1440;
+  const adjustedClose=rawClose<=openMins?rawClose+1440:rawClose;
+  const firstDrop=openMins-60;
+  const lastAllowed=adjustedClose-60;
+  const times=Array.from({length:n},(_,i)=>{
+    const mins=firstDrop+i*180;
+    const capped=i===n-1?Math.min(mins,lastAllowed):mins;
+    return formatTime(capped);
+  });
+  return times.map((t,i)=>({label:i===0?'MORNING':i===n-1?'FINAL':`CYCLE 0${i+1}`,time:t,readyTime:formatTime(parseTime(t)+45)}));
+}
 
-        function Header({ currentTime, activeTab, setActiveTab }) {
-          const formattedDate = new Date(currentTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-          const NavItem = ({ id, label, svgPath }) => (
-            React.createElement('button', { 
-              onClick: () => setActiveTab(id), 
-              className: `px-4 sm:px-8 py-3 flex items-center gap-3 rounded-[1.5rem] transition-all duration-300 ${activeTab === id ? 'bg-white text-[#1e293b] shadow-xl' : 'text-white/60 hover:text-white'}` 
-            },
-              React.createElement('svg', { className: 'w-5 h-5', fill: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { d: svgPath })),
-              React.createElement('span', { className: 'font-black uppercase text-[10px] tracking-widest hidden md:inline italic' }, label)
-            )
-          );
-          return React.createElement('header', { className: 'bg-[#1e293b] px-6 sm:px-10 py-6 flex flex-col md:flex-row justify-between items-center gap-6 no-print shadow-2xl relative z-[100]' },
-            React.createElement('div', { className: 'flex items-center gap-6' },
-              React.createElement('div', { className: 'bg-white/10 w-12 h-12 rounded-full flex items-center justify-center border border-white/10' }, React.createElement('svg', { className: 'w-6 h-6 text-white', fill: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { d: 'M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z' }))),
-              React.createElement('div', null, React.createElement('h1', { className: 'text-2xl font-black text-white italic uppercase tracking-tighter' }, 'Prep Master'), React.createElement('p', { className: 'text-[9px] font-black text-white/30 uppercase tracking-[0.4em] mt-1' }, formattedDate))
-            ),
-            React.createElement('nav', { className: 'flex gap-2 bg-white/5 p-1 rounded-full border border-white/10 overflow-x-auto no-scrollbar' },
-              React.createElement(NavItem, { id: 'metrics', label: 'Dashboard', svgPath: 'M13,3V9H19V3H13M15,5H17V7H15V5M3,13V19H9V13H3M5,15H7V17H5V15M13,13V19H19V13H13M15,15H17V17H15V15M3,3V9H9V3H3M5,5H7V7H5V5Z' }),
-              React.createElement(NavItem, { id: 'planner', label: 'Planner', svgPath: 'M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5C3.9,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.9 20.1,3 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z' }),
-              React.createElement(NavItem, { id: 'prepguide', label: 'Prep Guide', svgPath: 'M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5C3.34,8 2,9.34 2,11V17H6V21H18V17H22V11C22,9.34 20.66,8 19,8Z' }),
-              React.createElement(NavItem, { id: 'settings', label: 'Config', svgPath: 'M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.97 21.68,8.76L19.68,5.3C19.58,5.09 19.33,5 19.11,5.1L16.62,6.1C16.1,5.71 15.53,5.39 14.92,5.14L14.54,2.48C14.5,2.26 14.3,2.1 14.09,2.1H10.09C9.88,2.1 9.68,2.26 9.64,2.48L9.26,5.14C8.65,5.39 8.08,5.71 7.56,6.1L5.07,5.1C4.85,5 4.6,5.09 4.5,5.3L2.5,8.76C2.38,8.97 2.44,9.22 2.63,9.37L4.74,11.03C4.7,11.34 4.67,11.67 4.67,12C4.67,12.33 4.7,12.65 4.74,12.97L2.63,14.63C2.44,14.78 2.39,15.03 2.49,15.24L4.49,18.7C4.59,18.91 4.84,19 5.06,18.9L7.55,17.9C8.07,18.29 8.64,18.61 9.25,18.86L9.63,21.52C9.67,21.74 9.87,21.9 10.08,21.9H14.08C14.29,21.9 14.49,21.74 14.53,21.52L14.91,18.86C15.52,18.61 16.09,18.29 16.61,17.9L19.1,18.9C19.32,19.57,18.91,19.67,18.7L21.67,15.24C21.77,15.03 21.72,14.78 21.53,14.63L19.43,12.97Z' })
-            )
-          );
-        }
+function getPlan(id){return appState.plan.find(p=>p.templateId===id)||{target:0,carryOver:0,need:0}}
+function getEntry(id){return appState.workbook[id]||{drops:{},coChecked:false,waste:'',unplanned:''}}
 
-        function Forecasting({ templates, savedSheets, activePreps, onRemovePrep, currentTime, onClearHistory, onDeleteSheet }) {
-          const [pwId, setPwId] = useState(null), [pwInput, setPwInput] = useState(''), [pwError, setPwError] = useState(false), [selectedSheetId, setSelectedSheetId] = useState(null), [timeRange, setTimeRange] = useState('weekly');
-          const sortedSheets = useMemo(() => Array.isArray(savedSheets) ? [...savedSheets].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [], [savedSheets]);
-          
-          const analytics = useMemo(() => {
-            const stats = { totalWaste: 0, totalUnplanned: 0, totalPlanned: 0, totalActual: 0, accuracy: 0, history: [], latest: { planned: 0, unplanned: 0, waste: 0, score: 0 }, insights: { peakWasteDay: 'N/A', peakUnplannedDay: 'N/A', topWastedItems: [], topUnplannedItems: [] } };
-            if (sortedSheets.length === 0) return stats;
-            let filtered = sortedSheets.slice(0, timeRange === 'daily' ? 1 : timeRange === 'weekly' ? 7 : 30);
-            const dayAggregation = {}, itemAggregation = {};
-            filtered.forEach(s => {
-              const date = new Date(s.date), dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-              if (!dayAggregation[dayName]) dayAggregation[dayName] = { waste: 0, unplanned: 0 };
-              dayAggregation[dayName].waste += (s.totalWaste || 0);
-              const planned = s.plan?.reduce((a, b) => a + (b.target || 0), 0) || 0;
-              const unplanned = s.plan?.reduce((a, b) => a + (b.unplanned || 0), 0) || 0;
-              dayAggregation[dayName].unplanned += unplanned;
-              stats.totalPlanned += planned; stats.totalUnplanned += unplanned; stats.totalWaste += (s.totalWaste || 0); stats.totalActual += (s.totalProduced || 0);
-              stats.history.push({ label: date.toLocaleDateString([], { weekday: 'short' }), efficiency: planned > 0 ? ((s.totalProduced - (s.totalWaste || 0) - unplanned) / planned - 1) * 20 : 0, production: planned > 0 ? (s.totalProduced / planned - 1) * 20 : 0 });
-              s.plan?.forEach(p => { if (!itemAggregation[p.templateId]) itemAggregation[p.templateId] = { waste: 0, unplanned: 0 }; itemAggregation[p.templateId].waste += (p.actualWaste || 0); itemAggregation[p.templateId].unplanned += (p.unplanned || 0); });
-            });
-            stats.history.reverse();
-            stats.accuracy = stats.totalPlanned > 0 ? Math.round(((stats.totalActual - stats.totalWaste - stats.totalUnplanned) / stats.totalPlanned) * 100) : 0;
-            let mWaste = -1, mUnplanned = -1;
-            Object.entries(dayAggregation).forEach(([d, v]) => { if (v.waste > mWaste) { mWaste = v.waste; stats.insights.peakWasteDay = d; } if (v.unplanned > mUnplanned) { mUnplanned = v.unplanned; stats.insights.peakUnplannedDay = d; } });
-            stats.insights.topWastedItems = Object.entries(itemAggregation).map(([id, v]) => ({ name: templates.find(t => t.id === id)?.name || id, value: v.waste })).sort((a,b)=>b.value-a.value).slice(0,3).filter(x=>x.value>0);
-            stats.insights.topUnplannedItems = Object.entries(itemAggregation).map(([id, v]) => ({ name: templates.find(t => t.id === id)?.name || id, value: v.unplanned })).sort((a,b)=>b.value-a.value).slice(0,3).filter(x=>x.value>0);
-            
-            const latest = sortedSheets[0];
-            if (latest) {
-              const lp = latest.plan?.reduce((a, b) => a + (b.target || 0), 0) || 0;
-              stats.latest.planned = lp;
-              stats.latest.unplanned = latest.plan?.reduce((a, b) => a + (b.unplanned || 0), 0) || 0;
-              stats.latest.waste = latest.totalWaste || 0;
-              stats.latest.score = lp > 0 ? Math.round(((latest.totalProduced - latest.totalWaste - stats.latest.unplanned) / lp) * 100) : 0;
-            }
-            return stats;
-          }, [sortedSheets, timeRange, templates]);
+// ══════════════════════ TABS ══════════════════════
+function switchTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='dashboard')renderDashboard();
+  if(name==='planner')renderPlanner();
+  if(name==='prepguide')renderPrepGuide();
+  if(name==='config')renderConfig();
+}
 
-          const wastePercent = Math.round((analytics.latest.waste / (analytics.latest.planned + analytics.latest.unplanned || 1)) * 100);
+// ══════════════════════ HEADER ══════════════════════
+function updateHeader(){
+  const d=new Date();
+  document.getElementById('hdr-date').textContent=d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+  document.getElementById('hdr-store').textContent=appState.settings.storeIdentity||'UNIT #0000';
+}
 
-          const handlePurge = () => { if (pwInput === 'Livemas') { if (pwId === 'GLOBAL') onClearHistory(); else onDeleteSheet(pwId); setPwId(null); setPwInput(''); setPwError(false); } else { setPwError(true); setTimeout(() => setPwError(false), 800); } };
+// ══════════════════════ DASHBOARD ══════════════════════
+let dashTimeRange='weekly';
+let dashSelectedId=null;
 
-          return React.createElement('div', { className: 'max-w-[1500px] mx-auto space-y-12 pb-40 pt-4 px-4' },
-            pwId && React.createElement('div', { className: 'fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm' },
-              React.createElement('div', { className: `bg-white rounded-[3rem] p-12 max-w-md w-full text-center ${pwError ? 'animate-shake' : ''}` },
-                React.createElement('h3', { className: 'text-2xl font-black uppercase italic mb-8' }, 'Security Required'),
-                React.createElement('input', { type: 'password', value: pwInput, onChange: e => setPwInput(e.target.value), placeholder: 'PASSWORD', className: 'w-full bg-gray-50 border-2 rounded-[1.5rem] px-8 py-5 text-center font-black text-xl outline-none mb-6', onKeyDown: e => e.key === 'Enter' && handlePurge() }),
-                React.createElement('div', { className: 'flex gap-4' },
-                  React.createElement('button', { onClick: () => setPwId(null), className: 'flex-1 py-4 text-gray-400 font-black uppercase text-[10px]' }, 'Cancel'),
-                  React.createElement('button', { onClick: handlePurge, className: 'flex-1 py-4 bg-red-600 text-white rounded-[1.5rem] font-black uppercase text-[10px]' }, 'Purge')
-                )
-              )
-            ),
-            React.createElement('section', { className: 'bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-sm' },
-              React.createElement('div', { className: 'flex flex-col md:flex-row justify-between items-center mb-12 gap-6' },
-                React.createElement('div', null, React.createElement('h2', { className: 'text-3xl font-black text-[#1e293b] uppercase italic leading-none' }, 'Performance Metrics'), React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase mt-2' }, 'Efficiency Analysis Dashboard')),
-                React.createElement('div', { className: 'flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100' }, ['Daily', 'Weekly', 'Monthly', 'All'].map(t => React.createElement('button', { key: t, onClick: () => setTimeRange(t.toLowerCase()), className: `px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap ${timeRange === t.toLowerCase() ? 'bg-white shadow-lg text-[#6366f1]' : 'text-gray-400 hover:text-gray-600'}` }, t)))
-              ),
-              React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 items-center gap-12' },
-                React.createElement(DonutChart, { percent: analytics.accuracy, color: COLORS.accuracy, size: 180, strokeWidth: 20, label: 'Shift Score' }),
-                React.createElement('div', { className: 'md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-12' },
-                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase block mb-2' }, 'Target Yield'), React.createElement('div', { className: 'text-5xl font-black text-[#1e293b]' }, analytics.totalActual)),
-                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase block mb-2' }, 'Extra Load'), React.createElement('div', { className: 'text-5xl font-black text-blue-500' }, analytics.totalUnplanned)),
-                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase block mb-2' }, 'Waste'), React.createElement('div', { className: 'text-5xl font-black text-pink-500' }, analytics.totalWaste))
-                )
-              )
-            ),
-            
-            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8' },
-              React.createElement('div', { className: 'lg:col-span-4 space-y-8 flex flex-col' },
-                React.createElement('section', { className: 'bg-white rounded-[3rem] shadow-sm border border-gray-100 p-10 flex-1 flex flex-col justify-center' },
-                  React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 italic' }, 'LATEST SHIFT EFFICIENCY'),
-                  React.createElement('div', { className: 'flex items-center gap-10' },
-                    React.createElement(DonutChart, { percent: analytics.latest.score, color: COLORS.accuracy, size: 110, strokeWidth: 14, label: 'Efficiency' }),
-                    React.createElement('div', { className: 'space-y-4' },
-                      React.createElement('div', null, 
-                        React.createElement('div', { className: 'flex items-baseline gap-1' }, 
-                          React.createElement('span', { className: 'text-2xl font-black tabular-nums' }, analytics.latest.planned),
-                          React.createElement('span', { className: 'text-[8px] font-black text-gray-400' }, 'UNITS')
-                        ),
-                        React.createElement('span', { className: 'text-[9px] font-bold text-gray-400 uppercase tracking-widest' }, 'BASELINE PLAN')
-                      ),
-                      React.createElement('div', null, 
-                        React.createElement('div', { className: 'flex items-baseline gap-1' }, 
-                          React.createElement('span', { className: 'text-2xl font-black text-blue-500 tabular-nums' }, analytics.latest.unplanned),
-                          React.createElement('span', { className: 'text-[8px] font-black text-gray-400' }, 'UNITS')
-                        ),
-                        React.createElement('span', { className: 'text-[9px] font-bold text-gray-400 uppercase tracking-widest' }, 'EXTRA LOAD (CAPTURED)')
-                      )
-                    )
-                  )
-                ),
-                React.createElement('section', { className: 'bg-white rounded-[3rem] shadow-sm border border-gray-100 p-10 flex-1 flex flex-col justify-center' },
-                  React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 italic' }, 'LATEST SHIFT WASTE'),
-                  React.createElement('div', { className: 'flex items-center gap-10' },
-                    React.createElement(DonutChart, { percent: wastePercent, color: COLORS.waste, size: 110, strokeWidth: 14, label: 'LOSS %' }),
-                    React.createElement('div', null, 
-                      React.createElement('div', { className: 'flex items-baseline gap-2' }, 
-                        React.createElement('span', { className: 'text-4xl font-black text-pink-500 tabular-nums' }, analytics.latest.waste),
-                        React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase' }, 'UNITS')
-                      ),
-                      React.createElement('span', { className: 'text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2 block' }, 'ENTERPRISE WASTE VOLUME')
-                    )
-                  )
-                )
-              ),
-              React.createElement('section', { className: 'lg:col-span-8 bg-white rounded-[3.5rem] shadow-sm border border-gray-100 p-12 flex flex-col' },
-                React.createElement('h3', { className: 'text-sm font-black text-[#1e293b] uppercase tracking-[0.3em] italic mb-10' }, 'Historical Efficiency Trend'),
-                React.createElement(AreaTrendChart, { data: analytics.history })
-              )
-            ),
+function setTimeRange(r,btn){dashTimeRange=r;document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderDashboard()}
 
-            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-8' },
-              React.createElement('div', { className: 'bg-white rounded-[3rem] p-10 shadow-sm border' }, React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase mb-6' }, 'Operational Peaks'), React.createElement('div', { className: 'space-y-4' }, React.createElement('div', null, React.createElement('span', { className: 'text-[8px] font-black text-pink-400 uppercase' }, 'Peak Waste'), React.createElement('div', { className: 'text-2xl font-black italic' }, analytics.insights.peakWasteDay)), React.createElement('div', null, React.createElement('span', { className: 'text-[8px] font-black text-blue-400 uppercase' }, 'Peak Surge'), React.createElement('div', { className: 'text-2xl font-black italic' }, analytics.insights.peakUnplannedDay)))),
-              React.createElement('div', { className: 'bg-white rounded-[3rem] p-10 shadow-sm border' }, React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase mb-6' }, 'Waste Criticality'), React.createElement('div', { className: 'space-y-2' }, analytics.insights.topWastedItems.map((it, i) => React.createElement('div', { key: i, className: 'flex justify-between' }, React.createElement('span', { className: 'text-xs font-black italic' }, it.name), React.createElement('span', { className: 'text-xs font-black text-pink-500' }, it.value))))),
-              React.createElement('div', { className: 'bg-white rounded-[3rem] p-10 shadow-sm border' }, React.createElement('h3', { className: 'text-[10px] font-black text-gray-400 uppercase mb-6' }, 'Demand Volatility'), React.createElement('div', { className: 'space-y-2' }, analytics.insights.topUnplannedItems.map((it, i) => React.createElement('div', { key: i, className: 'flex justify-between' }, React.createElement('span', { className: 'text-xs font-black italic' }, it.name), React.createElement('span', { className: 'text-xs font-black text-blue-500' }, it.value)))))
-            ),
-            activePreps.length > 0 && React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-8' }, activePreps.map(p => React.createElement(TimerCard, { key: p.id, prep: p, template: templates.find(t => t.id === p.templateId), onRemove: () => onRemovePrep(p.id), currentTime: currentTime }))),
-            React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-200 overflow-hidden shadow-sm' },
-              React.createElement('div', { className: 'px-12 py-10 bg-gray-50 border-b border-gray-200 flex justify-between items-center' }, React.createElement('h3', { className: 'text-xl font-black uppercase italic' }, 'Audit Registry'), React.createElement('button', { onClick: () => setPwId('GLOBAL'), className: 'bg-red-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg' }, 'Purge Database')),
-              React.createElement('div', { className: 'overflow-x-auto' },
-                React.createElement('table', { className: 'w-full text-left' },
-                  React.createElement('thead', { className: 'text-[10px] font-black text-gray-400 uppercase bg-white border-b' },
-                    React.createElement('tr', null, React.createElement('th', { className: 'px-12 py-8' }, 'Date & Cycle Hash'), React.createElement('th', { className: 'px-6 py-8 text-center' }, 'Score'), React.createElement('th', { className: 'px-6 py-8 text-center' }, 'Yield'), React.createElement('th', { className: 'px-6 py-8 text-center' }, 'Waste'), React.createElement('th', { className: 'px-12 py-8 text-right' }, 'Actions'))
-                  ),
-                  React.createElement('tbody', { className: 'divide-y' }, sortedSheets.map(s => {
-                    const isSel = selectedSheetId === s.id;
-                    const planTotal = s.plan?.reduce((a,b)=>a+(b.target||0),0)||1;
-                    const acc = Math.round(((s.totalProduced - s.totalWaste) / planTotal) * 100);
-                    return React.createElement(React.Fragment, { key: s.id },
-                      React.createElement('tr', { key: s.id, className: `hover:bg-slate-50 cursor-pointer ${isSel ? 'bg-indigo-50/30' : ''}`, onClick: () => setSelectedSheetId(isSel ? null : s.id) },
-                        React.createElement('td', { className: 'px-12 py-8' }, React.createElement('span', { className: 'font-black block uppercase italic' }, s.date), React.createElement('span', { className: 'text-[9px] text-gray-400' }, s.id)),
-                        React.createElement('td', { className: 'px-6 py-8 text-center' }, React.createElement('span', { className: `px-4 py-1.5 rounded-full font-black text-xs ${acc >= 90 ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}` }, acc + '%')),
-                        React.createElement('td', { className: 'px-6 py-8 text-center font-black text-xl' }, s.totalProduced),
-                        React.createElement('td', { className: 'px-6 py-8 text-center font-black text-xl text-pink-500' }, s.totalWaste),
-                        React.createElement('td', { className: 'px-12 py-8 text-right' }, React.createElement('button', { onClick: (e) => { e.stopPropagation(); setPwId(s.id); }, className: 'text-red-400 p-2 hover:bg-red-50 rounded-lg transition-all' }, React.createElement('svg', { className: 'w-5 h-5', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { d: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', strokeWidth: 2 }))))
-                      ),
-                      isSel && React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: 'p-12' }, React.createElement('div', { className: 'bg-white rounded-3xl shadow-xl overflow-hidden' }, React.createElement('table', { className: 'w-full text-left' }, React.createElement('thead', { className: 'bg-gray-50 border-b' }, React.createElement('tr', null, React.createElement('th', { className: 'px-8 py-4' }, 'Product'), React.createElement('th', { className: 'px-8 py-4 text-center' }, 'Produced'), React.createElement('th', { className: 'px-8 py-4 text-center' }, 'Waste'))), React.createElement('tbody', null, s.plan.filter(p=>p.actualProduced>0).map(p=>React.createElement('tr', { key: p.templateId }, React.createElement('td', { className: 'px-8 py-4 font-black italic uppercase' }, templates.find(t=>t.id===p.templateId)?.name || p.templateId), React.createElement('td', { className: 'px-8 py-4 text-center font-black text-blue-500' }, p.actualProduced), React.createElement('td', { className: 'px-8 py-4 text-center font-black text-pink-500' }, p.actualWaste))))))))
-                    );
-                  }))
-                )
-              )
-            )
-          );
-        }
+function calcAnalytics(){
+  const sheets=appState.sheets;
+  const stats={totalWaste:0,totalUnplanned:0,totalPlanned:0,totalActual:0,accuracy:0,history:[],latest:{planned:0,unplanned:0,waste:0,score:0},insights:{peakWasteDay:'N/A',peakUnplannedDay:'N/A',topWastedItems:[],topUnplannedItems:[]}};
+  if(!sheets.length)return stats;
+  const sorted=[...sheets].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const n=dashTimeRange==='daily'?1:dashTimeRange==='weekly'?7:dashTimeRange==='monthly'?30:sorted.length;
+  const filtered=sorted.slice(0,n);
+  const dayAgg={},itemAgg={};
+  filtered.forEach(s=>{
+    const d=new Date(s.date),dayName=d.toLocaleDateString('en-US',{weekday:'long'});
+    if(!dayAgg[dayName])dayAgg[dayName]={waste:0,unplanned:0};
+    dayAgg[dayName].waste+=(s.totalWaste||0);
+    const planned=s.plan?.reduce((a,b)=>a+(b.target||0),0)||0;
+    const unplanned=s.plan?.reduce((a,b)=>a+(b.unplanned||0),0)||0;
+    dayAgg[dayName].unplanned+=unplanned;
+    stats.totalPlanned+=planned;stats.totalUnplanned+=unplanned;stats.totalWaste+=(s.totalWaste||0);stats.totalActual+=(s.totalProduced||0);
+    stats.history.push({label:d.toLocaleDateString([],{weekday:'short'}),efficiency:planned>0?((s.totalProduced-(s.totalWaste||0)-unplanned)/planned-1)*20:0});
+    s.plan?.forEach(p=>{if(!itemAgg[p.templateId])itemAgg[p.templateId]={waste:0,unplanned:0};itemAgg[p.templateId].waste+=(p.actualWaste||0);itemAgg[p.templateId].unplanned+=(p.unplanned||0)});
+  });
+  stats.history.reverse();
+  stats.accuracy=stats.totalPlanned>0?Math.round(((stats.totalActual-stats.totalWaste-stats.totalUnplanned)/stats.totalPlanned)*100):0;
+  let mW=-1,mU=-1;
+  Object.entries(dayAgg).forEach(([d,v])=>{if(v.waste>mW){mW=v.waste;stats.insights.peakWasteDay=d}if(v.unplanned>mU){mU=v.unplanned;stats.insights.peakUnplannedDay=d}});
+  stats.insights.topWastedItems=Object.entries(itemAgg).map(([id,v])=>({name:TEMPLATES.find(t=>t.id===id)?.name||id,value:v.waste})).sort((a,b)=>b.value-a.value).slice(0,3).filter(x=>x.value>0);
+  stats.insights.topUnplannedItems=Object.entries(itemAgg).map(([id,v])=>({name:TEMPLATES.find(t=>t.id===id)?.name||id,value:v.unplanned})).sort((a,b)=>b.value-a.value).slice(0,3).filter(x=>x.value>0);
+  const latest=sorted[0];
+  if(latest){const lp=latest.plan?.reduce((a,b)=>a+(b.target||0),0)||0;stats.latest.planned=lp;stats.latest.unplanned=latest.plan?.reduce((a,b)=>a+(b.unplanned||0),0)||0;stats.latest.waste=latest.totalWaste||0;stats.latest.score=lp>0?Math.round(((latest.totalProduced-latest.totalWaste-stats.latest.unplanned)/lp)*100):0}
+  return stats;
+}
 
-        function PrepPlanner({ templates, plan, onUpdatePlan }) {
-          const handleValueChange = (id, field, val) => {
-            const num = parseInt(val) || 0;
-            const exist = plan.find(p => p.templateId === id);
-            let next = exist ? plan.map(p => p.templateId === id ? { ...p, [field]: num, need: Math.max(0, (field === 'target' ? num : p.target) - (field === 'carryOver' ? num : p.carryOver)) } : p) : [...plan, { templateId: id, target: field === 'target' ? num : 0, carryOver: field === 'carryOver' ? num : 0, need: Math.max(0, (field === 'target' ? num : 0) - (field === 'carryOver' ? num : 0)) }];
-            onUpdatePlan(next);
-          };
-          return React.createElement('div', { className: 'max-w-[1500px] mx-auto space-y-12 pb-40 pt-4 px-4' },
-            React.createElement('section', { className: 'bg-[#1e293b] rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden' }, React.createElement('h2', { className: 'text-4xl font-black uppercase italic' }, 'Planner'), React.createElement('p', { className: 'text-[10px] font-black text-indigo-300 uppercase mt-2' }, 'Active Production Cycle')),
-            React.createElement('div', { className: 'bg-white rounded-[3.5rem] border shadow-sm overflow-hidden' },
-              React.createElement('table', { className: 'w-full text-left' },
-                React.createElement('thead', { className: 'text-[10px] font-black text-gray-400 uppercase bg-slate-50 border-b' },
-                  React.createElement('tr', null, React.createElement('th', { className: 'px-12 py-10' }, 'Product'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Daily Target'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Carry Over'), React.createElement('th', { className: 'px-12 py-10 text-right w-48' }, 'Immediate Need'))
-                ),
-                React.createElement('tbody', { className: 'divide-y' }, templates.map(t => {
-                  const p = plan.find(x => x.templateId === t.id) || { target: 0, carryOver: 0, need: 0 };
-                  return React.createElement('tr', { key: t.id, className: 'hover:bg-indigo-50/5' },
-                    React.createElement('td', { className: 'px-12 py-10 font-black text-lg uppercase italic text-[#1e293b]' }, t.name),
-                    React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('input', { type: 'number', value: p.target || '', onChange: e => handleValueChange(t.id, 'target', e.target.value), className: 'w-24 p-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-indigo-300 font-black text-center text-xl outline-none' })),
-                    React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('input', { type: 'number', value: p.carryOver || '', onChange: e => handleValueChange(t.id, 'carryOver', e.target.value), className: 'w-24 p-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-indigo-300 font-black text-center text-xl outline-none' })),
-                    React.createElement('td', { className: 'px-12 py-10 text-right' }, React.createElement('span', { className: `inline-block px-8 py-4 rounded-2xl font-black text-2xl tabular-nums shadow-lg ${p.need > 0 ? 'bg-[#3acfb6] text-white' : 'bg-gray-100 text-gray-300'}` }, p.need))
-                  );
-                }))
-              )
-            )
-          );
-        }
+function drawDonut(containerId,percent,color,size,strokeW,label){
+  const el=document.getElementById(containerId);if(!el)return;
+  const r=(size-strokeW)/2,circ=2*Math.PI*r,pct=Math.min(100,Math.max(0,percent||0));
+  el.innerHTML=`<div class="donut-wrap" style="width:${size}px;height:${size}px">
+    <svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#f1f5f9" stroke-width="${strokeW}"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round"
+        stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-pct/100)}"/>
+    </svg>
+    <div class="donut-label"><div class="donut-pct">${pct}%</div><div class="donut-sub">${label}</div></div>
+  </div>`
+}
 
-        function PrintGuide({ templates, settings, plan, workbook, onUpdateWorkbook, onSaveSheet, onTransferToSettings }) {
-          const printRef = useRef(null), containerRef = useRef(null);
-          // Standardized to portrait mode as requested
-          const [orientation, setOrientation] = useState('portrait'), [isGenerating, setIsGenerating] = useState(false);
-          const [scale, setScale] = useState(1);
-          const [footerNotes, setFooterNotes] = useState(['', '', '']), [openingMic, setOpeningMic] = useState(''), [closingMic, setClosingMic] = useState('');
-          const dateStr = useMemo(() => new Date().toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(), []);
-          
-          const nDrops = settings.numDrops || 6;
-          const targetWidth = orientation === 'portrait' ? 794 : 1123;
-          const targetHeight = orientation === 'portrait' ? 1123 : 794;
+function drawTrend(data){
+  const canvas=document.getElementById('dash-trend-canvas');if(!canvas)return;
+  const W=canvas.parentElement.clientWidth||600,H=160;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  if(!data||data.length<2){ctx.fillStyle='#f8fafc';ctx.fillRect(0,0,W,H);ctx.fillStyle='#9ca3af';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText('NOT ENOUGH DATA',W/2,H/2);return}
+  const vals=data.map(d=>d.efficiency);
+  const mn=Math.min(...vals,0),mx=Math.max(...vals,0),range=mx-mn||1;
+  const toY=v=>H-14-(v-mn)/range*(H-32);
+  const step=W/(data.length-1);
+  ctx.strokeStyle='#f1f5f9';ctx.lineWidth=1;
+  [0,0.25,0.5,0.75,1].forEach(f=>{const y=toY(mn+f*range);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()});
+  const base=toY(0);ctx.strokeStyle='#e5e7eb';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,base);ctx.lineTo(W,base);ctx.stroke();
+  const pts=data.map((d,i)=>({x:i*step,y:toY(d.efficiency)}));
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(W,base);ctx.lineTo(0,base);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(58,207,182,0.3)');g.addColorStop(1,'rgba(58,207,182,0)');ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle='#3acfb6';ctx.lineWidth=2;ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();
+  ctx.fillStyle='#9ca3af';ctx.font='bold 9px Arial';ctx.textAlign='center';
+  data.forEach((d,i)=>{if(i%(Math.ceil(data.length/6))===0||i===data.length-1)ctx.fillText(d.label,i*step,H-2)});
+}
 
-          useLayoutEffect(() => {
-            const updateScale = () => {
-              if (containerRef.current) {
-                const availableWidth = containerRef.current.offsetWidth;
-                const padding = 32; 
-                const effectiveWidth = availableWidth - padding;
-                if (effectiveWidth < targetWidth) setScale(effectiveWidth / targetWidth);
-                else setScale(1);
-              }
-            };
-            updateScale();
-            window.addEventListener('resize', updateScale);
-            return () => window.removeEventListener('resize', updateScale);
-          }, [orientation, targetWidth]);
+function renderDashboard(){
+  const sheets=appState.sheets;
+  document.getElementById('dash-total-shifts').textContent=sheets.length;
+  document.getElementById('dash-total-prod').textContent=sheets.reduce((a,s)=>a+(s.totalProduced||0),0);
+  document.getElementById('dash-total-waste').textContent=sheets.reduce((a,s)=>a+(s.totalWaste||0),0);
+  const a=calcAnalytics();
+  const wastePercent=Math.round((a.latest.waste/((a.latest.planned+a.latest.unplanned)||1))*100);
+  drawDonut('dash-donut-main',a.accuracy,'#3acfb6',160,18,'Shift Score');
+  document.getElementById('dash-yield').textContent=a.totalActual;
+  document.getElementById('dash-extra').textContent=a.totalUnplanned;
+  document.getElementById('dash-waste').textContent=a.totalWaste;
+  drawDonut('dash-donut-eff',a.latest.score,'#3acfb6',100,12,'Efficiency');
+  drawDonut('dash-donut-waste',wastePercent,'#f97fb1',100,12,'LOSS %');
+  document.getElementById('dash-lat-plan').textContent=a.latest.planned;
+  document.getElementById('dash-lat-extra').textContent=a.latest.unplanned;
+  document.getElementById('dash-lat-waste').textContent=a.latest.waste;
+  setTimeout(()=>drawTrend(a.history),50);
+  document.getElementById('dash-peak-waste').textContent=a.insights.peakWasteDay;
+  document.getElementById('dash-peak-surge').textContent=a.insights.peakUnplannedDay;
+  document.getElementById('dash-top-waste').innerHTML=a.insights.topWastedItems.length?a.insights.topWastedItems.map(it=>`<div class="insight-item"><span class="iname">${it.name}</span><span class="ival" style="color:#f43f5e">${it.value}</span></div>`).join(''):'<div class="empty-state" style="padding:16px;font-size:9px">No waste data</div>';
+  document.getElementById('dash-top-unplanned').innerHTML=a.insights.topUnplannedItems.length?a.insights.topUnplannedItems.map(it=>`<div class="insight-item"><span class="iname">${it.name}</span><span class="ival" style="color:#3b82f6">${it.value}</span></div>`).join(''):'<div class="empty-state" style="padding:16px;font-size:9px">No data</div>';
+  const sorted=[...sheets].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const audit=document.getElementById('dash-audit');
+  if(!sorted.length){audit.innerHTML='<div class="empty-state">No shift history yet.</div>';return}
+  audit.innerHTML=`<table class="audit-table"><thead><tr><th>Date & Cycle</th><th class="center">Score</th><th class="center">Yield</th><th class="center">Waste</th><th class="right" style="padding-right:24px">Actions</th></tr></thead><tbody id="audit-tbody"></tbody></table>`;
+  const tbody=document.getElementById('audit-tbody');
+  sorted.forEach(s=>{
+    const planTotal=s.plan?.reduce((a,b)=>a+(b.target||0),0)||1;
+    const acc=Math.round(((s.totalProduced-(s.totalWaste||0))/planTotal)*100);
+    const hi=acc>=90;
+    const isSel=dashSelectedId===s.id;
+    const row=document.createElement('tr');
+    row.className='arow'+(isSel?' sel':'');
+    row.innerHTML=`<td><span style="font-weight:900;text-transform:uppercase;font-style:italic;display:block">${s.date}</span><span style="font-size:9px;color:#9ca3af">${s.storeIdentity||''}</span></td><td class="center"><span class="score-badge ${hi?'score-hi':'score-lo'}">${acc}%</span></td><td class="center" style="font-weight:900;font-size:18px">${s.totalProduced}</td><td class="center" style="font-weight:900;font-size:18px;color:#f43f5e">${s.totalWaste||0}</td><td class="right" style="padding-right:24px"><button onclick="event.stopPropagation();deleteSheet('${s.id}')" style="background:none;border:none;cursor:pointer;color:#e5e7eb;font-size:16px;padding:4px" onmouseover="this.style.color='#f43f5e'" onmouseout="this.style.color='#e5e7eb'">✕</button></td>`;
+    row.onclick=()=>{dashSelectedId=(dashSelectedId===s.id?null:s.id);renderDashboard()};
+    tbody.appendChild(row);
+    if(isSel){
+      const detail=document.createElement('tr');
+      const produced=s.plan?.filter(p=>p.actualProduced>0)||[];
+      detail.innerHTML=`<td colspan="5"><div class="detail-inner"><table class="detail-table"><thead><tr><th>Product</th><th style="text-align:center">Produced</th><th style="text-align:center">Waste</th></tr></thead><tbody>${produced.map(p=>`<tr><td>${TEMPLATES.find(t=>t.id===p.templateId)?.name||p.templateId}</td><td style="text-align:center;color:#3b82f6">${p.actualProduced}</td><td style="text-align:center;color:#f43f5e">${p.actualWaste||0}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:#d1d5db;padding:16px">No production data</td></tr>'}</tbody></table></div></td>`;
+      tbody.appendChild(detail);
+    }
+  });
+}
 
-          const dynamicPrepWindows = useMemo(() => {
-            const n = settings.numDrops || 2;
-            const getBaseMins = (i) => {
-              if (i === 0) return 10 * 60;
-              if (i === 1) return 14 * 60;
-              if (i === 2) return 17 * 60;
-              return (17 * 60) + ((i - 2) * 120);
-            };
-            const times = settings.customDropTimes && settings.customDropTimes.length === n ? settings.customDropTimes : Array.from({ length: n }).map((_, i) => formatTime(getBaseMins(i)));
-            return times.map((t, i) => ({ label: i === 0 ? "MORNING" : i === n-1 ? "FINAL" : `CYCLE 0${i+1}`, time: t, readyTime: formatTime(parseTime(t) + 45) }));
-          }, [settings.numDrops, settings.customDropTimes]);
+function deleteSheet(id){appState.sheets=appState.sheets.filter(s=>s.id!==id);if(dashSelectedId===id)dashSelectedId=null;save();renderDashboard()}
+function clearHistory(){if(!confirm('Purge all history?'))return;appState.sheets=[];dashSelectedId=null;save();renderDashboard();toast('History purged.')}
 
-          const colWidths = useMemo(() => {
-            const totalW = targetWidth - 32;
-            const isPortrait = orientation === 'portrait';
-            if (isPortrait) {
-              const spec = 140, total = 80, log = 120;
-              const segments = nDrops + 1;
-              const segmentWidth = Math.floor((totalW - spec - total - log) / segments);
-              return { spec: totalW - total - log - (segmentWidth * segments), total, drop: segmentWidth, co: segmentWidth, log };
-            }
-            const spec = 340, total = 90, log = 220;
-            const segments = nDrops + 1;
-            const segmentWidth = Math.floor((totalW - spec - total - log) / segments);
-            return { spec: totalW - total - log - (segmentWidth * segmentWidth), total, drop: segmentWidth, co: segmentWidth, log };
-          }, [nDrops, orientation, targetWidth]);
+// ══════════════════════ PLANNER ══════════════════════
+function updatePlan(id,field,val){
+  const num=parseInt(val)||0;
+  const exist=appState.plan.find(p=>p.templateId===id);
+  if(exist){
+    exist[field]=num;
+    exist.need=Math.max(0,exist.target-exist.carryOver);
+  } else {
+    const item={templateId:id,target:0,carryOver:0,need:0};
+    item[field]=num;item.need=Math.max(0,item.target-item.carryOver);
+    appState.plan.push(item);
+  }
+  save();
+  const row=document.querySelector(`[data-plan-need="${id}"]`);
+  if(row){const p=getPlan(id);row.textContent=p.need;row.className=`need-badge ${p.need>0?'has':'zero'}`}
+}
 
-          const handleUpdateLogs = (id, field, value) => {
-            onUpdateWorkbook(prev => {
-               const item = prev[id] || { drops: {}, coChecked: false, waste: '', unplanned: '' };
-               return { ...prev, [id]: { ...item, [field]: value } };
-            });
-          };
+function renderPlanner(){
+  const tbody=document.getElementById('plan-tbody');
+  tbody.innerHTML=TEMPLATES.map(t=>{
+    const p=getPlan(t.id);
+    return `<tr>
+      <td style="font-weight:900;font-size:13px;text-transform:uppercase;font-style:italic;color:#1e293b;padding:10px 24px">${t.name}</td>
+      <td class="center"><input class="plan-input" type="number" value="${p.target||''}" placeholder="0" oninput="updatePlan('${t.id}','target',this.value);renderPrepGuide()" /></td>
+      <td class="center"><input class="plan-input" type="number" value="${p.carryOver||''}" placeholder="0" oninput="updatePlan('${t.id}','carryOver',this.value);renderPrepGuide()" /></td>
+      <td class="right" style="padding-right:32px"><span class="need-badge ${p.need>0?'has':'zero'}" data-plan-need="${t.id}">${p.need}</span></td>
+    </tr>`
+  }).join('');
+}
 
-          const handleUpdateDrop = (id, idx, field, value) => {
-            onUpdateWorkbook(prev => {
-               const item = prev[id] || { drops: {}, coChecked: false, waste: '', unplanned: '' };
-               const drops = { ...item.drops };
-               drops[idx] = { ...(drops[idx] || { qty: '', checked: false }), [field]: value };
-               return { ...prev, [id]: { ...item, drops } };
-            });
-          };
+// ══════════════════════ PREP GUIDE ══════════════════════
+function toggleMic(which){
+  appState.activeMic=(appState.activeMic===which?null:which);
+  save();updateMicUI();
+}
+function updateMicUI(){
+  const am=appState.activeMic;
+  const ob=document.getElementById('mic-open-btn');
+  const cb=document.getElementById('mic-close-btn');
+  const al=document.getElementById('mic-active-label');
+  if(!ob)return;
+  const oInitials=appState.openingMic.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,3)||'OPEN';
+  const cInitials=appState.closingMic.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,3)||'CLOSE';
+  ob.textContent=oInitials+' MIC';
+  cb.textContent=cInitials+' MIC';
+  ob.className='mic-btn'+(am==='opening'?' open-active':'');
+  cb.className='mic-btn'+(am==='closing'?' close-active':'');
+  if(am){al.style.display='inline';al.textContent=(am==='opening'?(appState.openingMic||'Opening'):( appState.closingMic||'Closing'))+' ACTIVE'}
+  else{al.style.display='none'}
+}
 
-          const handleToggleCO = (id) => {
-            onUpdateWorkbook(prev => {
-               const item = prev[id] || { drops: {}, coChecked: false, waste: '', unplanned: '' };
-               return { ...prev, [id]: { ...item, coChecked: !item.coChecked } };
-            });
-          };
+function isMicReady(){const am=appState.activeMic;return am&&((am==='opening'&&appState.openingMic.trim())||(am==='closing'&&appState.closingMic.trim()))}
+function getActiveMicInitials(){
+  const am=appState.activeMic;
+  if(am==='opening'&&appState.openingMic.trim())return appState.openingMic.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,3);
+  if(am==='closing'&&appState.closingMic.trim())return appState.closingMic.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,3);
+  return null;
+}
 
-          const isOnceADay = (t) => {
-            const name = t.name.toUpperCase();
-            return t.category === 'Sauces' || name.includes('TWISTS') || name.includes('CHIPS') || name.includes('SOUR CREAM') || name.includes('GUACAMOLE') || name.includes('JALAPEÑO') || name.includes('JALAPENO');
-          };
+function toggleDrop(tid,idx){
+  if(!isMicReady()){toast('Select and name a mic first.');return}
+  const e=getEntry(tid);
+  const drops={...e.drops};
+  const cur=drops[idx]?.checked;
+  drops[idx]={...(drops[idx]||{qty:''}),checked:!cur,initials:!cur?(getActiveMicInitials()||'✓'):null};
+  appState.workbook[tid]={...e,drops};
+  save();
+  // update cell
+  const cell=document.getElementById(`drop-check-${tid}-${idx}`);
+  if(cell){cell.className='drop-check'+(drops[idx].checked?' done':'');cell.innerHTML='✓'+(drops[idx].checked&&drops[idx].initials&&drops[idx].initials!=='✓'?`<span class="initials">${drops[idx].initials}</span>`:'')}
+}
 
-          const handleDownloadPDF = async () => {
-            const element = printRef.current;
-            if (!element || isGenerating) return;
-            setIsGenerating(true);
-            try {
-              const clone = element.cloneNode(true);
-              clone.style.width = `${targetWidth}px`;
-              clone.style.transform = 'none'; clone.style.margin = '0'; clone.style.padding = '0';
-              clone.classList.remove('space-y-12'); 
-              const pages = clone.querySelectorAll('.page-container');
-              pages.forEach((pg, i) => { 
-                  pg.style.height = `${targetHeight}px`; pg.style.minHeight = `${targetHeight}px`; pg.style.maxHeight = `${targetHeight}px`;
-                  pg.style.width = `${targetWidth}px`; pg.style.overflow = 'hidden'; pg.style.boxSizing = 'border-box';
-                  pg.classList.remove('rounded-[3rem]', 'shadow-2xl', 'border'); 
-                  if (i < pages.length - 1) pg.style.pageBreakAfter = 'always';
-              });
-              const opt = { margin: 0, filename: `Prep_Guide_${dateStr}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'px', format: [targetWidth, targetHeight], orientation: orientation, compress: true } };
-              await window.html2pdf().set(opt).from(clone).save();
-            } finally { setIsGenerating(false); }
-          };
+function toggleCO(tid){
+  const e=getEntry(tid);
+  appState.workbook[tid]={...e,coChecked:!e.coChecked};
+  save();
+  const cell=document.getElementById(`co-check-${tid}`);
+  if(cell){cell.className='co-check'+(appState.workbook[tid].coChecked?' done':'');cell.innerHTML='✓'}
+}
 
-          const handleSaveAsPresetClick = () => {
-            const targets = {};
-            const drops = {};
-            plan.forEach(p => { if (p.target > 0) targets[p.templateId] = p.target; });
-            Object.entries(workbook).forEach(([tid, data]) => {
-              const itemDrops = {};
-              let hasDrops = false;
-              if (data.drops) {
-                Object.entries(data.drops).forEach(([idx, entry]) => {
-                  if (entry.qty && entry.qty !== '0') {
-                    itemDrops[parseInt(idx)] = entry.qty;
-                    hasDrops = true;
-                  }
-                });
-              }
-              if (hasDrops) drops[tid] = itemDrops;
-            });
-            onTransferToSettings(targets, drops);
-            if (typeof setActiveTab === 'function') { setActiveTab('prepguide'); }
-          };
+function updateDrop(tid,idx,val){
+  const e=getEntry(tid);const drops={...e.drops};
+  drops[idx]={...(drops[idx]||{checked:false}),qty:val};
+  appState.workbook[tid]={...e,drops};save();
+}
 
-          const pagesArr = [
-            { title: "MODULE 01: CORE PROTEIN & FRY MATRIX", sections: [{ label: 'RETHERM ITEMS', matcher: t => (t.category === 'Protein' || t.name.includes('Cheese')) && !t.name.includes('Rice') }, { label: 'FRY ITEMS', matcher: t => t.category === 'Shells' || t.name.includes('Chips') || t.name.includes('Twists') }] },
-            { title: "MODULE 02: SECONDARY PREP & SAUCE RECAP", sections: [{ label: 'Bulk Grains (Mexican Rice)', matcher: t => t.name.includes('Rice') }, { label: 'Primary Cold Prep (4H hold time)', matcher: t => t.name.includes('Guacamole') || t.name.includes('Sour Cream') }, { label: 'Sauce Registry (8H hold time)', matcher: t => (t.category === 'Sauces' || t.category === 'Dairy' || t.category === 'Sides') && !t.name.includes('Guacamole') && !t.name.includes('Sour Cream') && !t.name.includes('Chips') && !t.name.includes('Twists') && !t.category.includes('Shells') }] }
-          ];
+function updateLog(tid,field,val){
+  const e=getEntry(tid);appState.workbook[tid]={...e,[field]:val};save();
+}
 
-          return React.createElement('div', { className: 'flex flex-col items-center pb-40 w-full px-2 sm:px-4 pt-4', ref: containerRef },
-            React.createElement('div', { className: 'flex flex-col xl:flex-row gap-6 mb-10 no-print w-full max-w-[1500px] justify-between items-center bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] shadow-sm border border-gray-100' },
-              React.createElement('div', { className: 'text-center xl:text-left' }, 
-                React.createElement('h2', { className: 'text-2xl font-black text-[#1e293b] uppercase italic tracking-tighter' }, 'Prep Guide'), 
-                React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2' }, 'Production Cycle Logs')
-              ),
-              React.createElement('div', { className: 'flex flex-wrap justify-center gap-4' },
-                React.createElement('button', { onClick: handleDownloadPDF, disabled: isGenerating, className: 'bg-[#6366f1] text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 shadow-lg active:scale-95 transition-all' }, 'Generate PDF'),
-                React.createElement('button', { onClick: handleSaveAsPresetClick, className: 'bg-[#2563eb] text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all' }, 'Save to Preset'),
-                React.createElement('button', { onClick: () => { 
-                   const todayISO = new Date().toISOString().split('T')[0];
-                   const finalPlan = templates.map((t) => {
-                     const p = plan.find((x) => x.templateId === t.id) || { target: 0 };
-                     const entry = workbook[t.id];
-                     let prod = 0; if (entry?.drops) Object.values(entry.drops).forEach((d) => prod += (parseInt(d.qty) || 0));
-                     return { templateId: t.id, target: p.target, actualProduced: prod, actualWaste: parseInt(entry?.waste) || 0, unplanned: parseInt(entry?.unplanned) || 0 };
-                   });
-                   onSaveSheet({ id: Date.now().toString(), date: todayISO, storeIdentity: settings.storeIdentity || 'UNIT #0000', plan: finalPlan, totalProduced: finalPlan.reduce((a, b) => a + (b.actualProduced || 0), 0), totalWaste: finalPlan.reduce((a, b) => a + (b.actualWaste || 0), 0) }); 
-                   
-                   // Reset inputs after verification
-                   onUpdateWorkbook(() => ({}));
-                   setFooterNotes(['', '', '']);
-                   setOpeningMic('');
-                   setClosingMic('');
-                   
-                   alert("Audit record stored. Input sheet has been reset for the next cycle."); 
-                }, className: 'bg-[#10b981] text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all' }, 'Verify Shift')
-              )
-            ),
-            React.createElement('div', { 
-              className: 'relative transition-all duration-300 ease-out origin-top flex flex-col items-center',
-              style: { width: targetWidth * scale, height: (targetHeight * pagesArr.length + (pagesArr.length - 1) * 48) * scale }
-            },
-              React.createElement('div', { 
-                ref: printRef, 
-                className: 'flex flex-col space-y-12 print:space-y-0 w-full',
-                style: { width: targetWidth, transform: `scale(${scale})`, transformOrigin: 'top center' }
-              },
-                pagesArr.map((pg, pgIdx) => React.createElement('div', { key: pgIdx, className: `page-container w-full bg-white shadow-2xl rounded-[3rem] border border-gray-300 overflow-hidden flex flex-col ${orientation === 'portrait' ? 'min-h-[1123px] max-h-[1123px]' : 'min-h-[794px] max-h-[794px]'} print-break-after` },
-                  React.createElement('div', { className: 'bg-[#1e293b] text-white flex justify-between items-center p-8 shrink-0' },
-                    React.createElement('div', null, React.createElement('h1', { className: 'text-4xl font-black italic uppercase' }, 'PREP GUIDE'), React.createElement('span', { className: 'text-[10px] uppercase opacity-50 tracking-[0.4em] mt-2 block' }, pg.title)),
-                    React.createElement('div', { className: 'text-right font-black italic tabular-nums uppercase' }, React.createElement('div', null, settings.storeIdentity || 'UNIT #0000'), React.createElement('div', { className: 'text-indigo-400' }, dateStr))
-                  ),
-                  React.createElement('div', { className: 'flex-1 p-4 overflow-hidden' },
-                    React.createElement('table', { className: 'w-full border-collapse table-fixed', style: { width: targetWidth - 32 } },
-                      React.createElement('thead', { className: 'bg-white border-b-2 border-gray-300' },
-                        React.createElement('tr', { className: 'text-[8px] sm:text-[10px] font-black uppercase text-gray-400' },
-                          React.createElement('th', { className: 'px-4 py-4 text-left border-r border-gray-300', style: { width: colWidths.spec } }, 'Specification'),
-                          React.createElement('th', { className: 'p-0 border-r border-gray-300 h-px', style: { width: colWidths.total } }, 
-                            React.createElement('div', { className: 'flex flex-col h-full items-center justify-center p-2' },
-                              React.createElement('div', { className: 'text-[7px] text-indigo-500 font-black uppercase mb-1 leading-none text-center' }, 'PROD'),
-                              React.createElement('div', { className: 'flex-1 w-full flex items-center justify-center bg-[#1e293b] text-white px-1.5 py-1 rounded text-[8px] sm:text-[9px] font-black uppercase shadow-sm mb-0.5 min-h-[18px]' }, 'START'),
-                              React.createElement('div', { className: 'flex-1 w-full flex items-center justify-center bg-emerald-50 text-emerald-700 px-1.5 py-1 rounded border border-emerald-100 text-[8px] sm:text-[9px] font-black uppercase min-h-[18px]' }, 'READY'),
-                              React.createElement('div', { className: 'mt-1.5 text-[9px] sm:text-[11px] text-[#1e293b] font-black italic uppercase tracking-tighter' }, 'TOTAL')
-                            )
-                          ),
-                          dynamicPrepWindows.map((win, i) => React.createElement('th', { key: i, className: 'p-0 border-r border-gray-300 h-px', style: { width: colWidths.drop } },
-                            React.createElement('div', { className: 'flex flex-col h-full items-center justify-center p-1 sm:p-2' },
-                              React.createElement('div', { className: 'text-[6px] text-indigo-500 font-black uppercase mb-1 truncate w-full' }, win.label),
-                              React.createElement('div', { className: 'bg-[#1e293b] text-white px-1 sm:px-2 py-1 rounded text-[8px] sm:text-[9px] w-full text-center' }, win.time),
-                              React.createElement('div', { className: 'bg-emerald-50 text-emerald-700 px-1 sm:px-2 py-1 rounded border border-emerald-200 text-[8px] sm:text-[9px] w-full text-center mt-1' }, win.readyTime),
-                              React.createElement('div', { className: 'grid grid-cols-2 w-full mt-1 text-[5px] sm:text-[7px] text-gray-400 font-black italic border-t border-gray-300 overflow-hidden' }, React.createElement('span', { className: 'truncate' }, 'QTY'), React.createElement('span', { className: 'truncate border-l border-gray-300 italic' }, 'DONE'))
-                            )
-                          )),
-                          React.createElement('th', { className: 'p-0 border-r border-gray-300 h-px', style: { width: colWidths.co } },
-                            React.createElement('div', { className: 'flex flex-col h-full items-center justify-center p-1 sm:p-2' },
-                              React.createElement('div', { className: 'bg-blue-500 text-white px-1 py-2.5 rounded text-[7px] sm:text-[9px] w-full text-center leading-none font-black italic uppercase' }, 'CARRY OVER'),
-                              React.createElement('div', { className: 'grid grid-cols-2 w-full mt-1 text-[5px] sm:text-[7px] text-gray-400 font-black italic border-t border-gray-300 overflow-hidden' }, React.createElement('span', { className: 'truncate' }, 'STOCK'), React.createElement('span', { className: 'truncate border-l border-gray-300 italic' }, 'DONE'))
-                            )
-                          ),
-                          React.createElement('th', { className: 'p-0 h-px', style: { width: colWidths.log } },
-                            React.createElement('div', { className: 'grid grid-cols-2 h-full text-[11px] font-black italic uppercase tracking-tighter' },
-                              React.createElement('div', { className: 'flex items-center justify-center border-r border-gray-300 text-indigo-500' }, 'EXTRA'),
-                              React.createElement('div', { className: 'flex items-center justify-center text-pink-500' }, 'WASTE')
-                            )
-                          )
-                        )
-                      ),
-                      React.createElement('tbody', null, pg.sections.map((section, sIdx) => {
-                        const items = templates.filter(section.matcher);
-                        if (items.length === 0) return null;
-                        return React.createElement(React.Fragment, { key: sIdx },
-                          React.createElement('tr', { className: 'bg-gray-100 border-b border-gray-300' }, React.createElement('td', { colSpan: dynamicPrepWindows.length + 4, className: 'px-6 py-3 font-black text-[#1e293b] text-[11px] uppercase italic tracking-[0.2em]' }, section.label)),
-                          items.map((t) => {
-                            const itemPlan = plan.find((p) => p.templateId === t.id) || { target: 0, carryOver: 0, need: 0 };
-                            const entry = workbook[t.id] || { drops: {}, waste: '', unplanned: '', coChecked: false };
-                            const itemIsOnceADay = isOnceADay(t);
-                            return React.createElement('tr', { key: t.id, className: 'border-b border-gray-300 h-14' },
-                              React.createElement('td', { className: 'px-6 py-1 leading-[1.1] border-r border-gray-200' }, 
-                                React.createElement('span', { className: `block font-black text-[#1e293b] uppercase italic ${orientation === 'portrait' ? 'text-[11px]' : 'text-[13px]'}` }, t.name),
-                                React.createElement('span', { className: 'text-[7px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 block' }, `${t.holdTimeMinutes / 60}H HOLD • ${t.cookTimeMinutes > 0 ? 'RETHERM' : 'INSTANT'}`)
-                              ),
-                              React.createElement('td', { className: 'text-center border-r border-gray-200' }, React.createElement('div', { className: 'flex h-full items-center justify-center font-black text-indigo-600 text-2xl tabular-nums italic pb-1' }, itemPlan.need)),
-                              itemIsOnceADay ? React.createElement('td', { colSpan: dynamicPrepWindows.length, className: 'p-0 border-x border-gray-200 h-px' }, 
-                                React.createElement('div', { onClick: () => handleUpdateDrop(t.id, 0, 'checked', !entry.drops[0]?.checked), className: `h-full w-full flex items-center justify-center cursor-pointer transition-all ${entry.drops[0]?.checked ? 'bg-emerald-50' : 'bg-transparent hover:bg-gray-100'}` },
-                                  React.createElement('div', { className: `text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${entry.drops[0]?.checked ? 'text-emerald-700' : 'text-gray-400'}` }, entry.drops[0]?.checked ? 'COMPLIANT ✓' : 'VERIFY')
-                                )
-                              ) : dynamicPrepWindows.map((_, dIdx) => React.createElement('td', { key: dIdx, className: 'border-x border-gray-200 p-0 h-full' }, 
-                                React.createElement('div', { className: 'grid grid-cols-2 h-full items-center' },
-                                  React.createElement('input', { className: 'w-full h-full text-center font-black text-sm outline-none no-print bg-transparent', placeholder: '0', value: entry.drops[dIdx]?.qty || '', onChange: e => handleUpdateDrop(t.id, dIdx, 'qty', e.target.value) }),
-                                  React.createElement('div', { onClick: () => handleUpdateDrop(t.id, dIdx, 'checked', !entry.drops[dIdx]?.checked), className: `flex h-full items-center justify-center cursor-pointer transition-all text-xl border-l border-gray-200 ${entry.drops[dIdx]?.checked ? 'bg-emerald-100 text-emerald-700' : 'text-gray-200 hover:bg-gray-50'}` }, '✓')
-                                )
-                              )),
-                              React.createElement('td', { className: 'border-r border-gray-200 p-0 bg-blue-50/20' }, 
-                                React.createElement('div', { className: 'grid grid-cols-2 h-full items-center' },
-                                  React.createElement('div', { className: 'text-center font-black text-blue-500 text-lg italic tabular-nums' }, itemPlan.carryOver),
-                                  React.createElement('div', { onClick: () => handleToggleCO(t.id), className: `flex h-full items-center justify-center cursor-pointer text-xl border-l border-gray-200 ${entry.coChecked ? 'bg-blue-100 text-blue-600' : 'text-gray-200 hover:bg-gray-50'}` }, '✓')
-                                )
-                              ),
-                              React.createElement('td', { className: 'p-0 bg-gray-50/20 h-full' }, 
-                                React.createElement('div', { className: 'grid grid-cols-2 h-full items-stretch' },
-                                  React.createElement('input', { className: 'w-full h-full text-center font-black text-indigo-500 text-[14px] bg-transparent outline-none p-0 px-1 border-r border-gray-200', placeholder: '+', value: entry.unplanned, onChange: e => handleUpdateLogs(t.id, 'unplanned', e.target.value) }),
-                                  React.createElement('input', { className: 'w-full h-full text-center font-black text-pink-600 text-[14px] bg-transparent outline-none p-0 px-1', placeholder: '-', value: entry.waste, onChange: e => handleUpdateLogs(t.id, 'waste', e.target.value) })
-                                )
-                              )
-                            );
-                          })
-                        );
-                      }))
-                    )
-                  ),
-                  React.createElement('div', { className: 'bg-gray-50 p-6 border-t-2 border-gray-300 grid grid-cols-2 gap-6 mt-auto shrink-0' },
-                    React.createElement('div', { className: 'bg-white border border-gray-300 p-4 rounded-2xl h-24 shadow-sm flex flex-col justify-between' },
-                      React.createElement('span', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest italic' }, 'SHIFT MANAGER NOTES'),
-                      React.createElement('textarea', { className: 'flex-1 bg-transparent border-none outline-none resize-none font-black text-xs text-[#1e293b] uppercase placeholder:text-gray-200 mt-2', value: pgIdx === 0 ? footerNotes[0] : footerNotes[1], onChange: e => { const n = [...footerNotes]; n[pgIdx] = e.target.value; setFooterNotes(n); }, placeholder: 'ENTER SHIFT NOTES...' })
-                    ),
-                    React.createElement('div', { className: 'space-y-4 flex flex-col justify-center' },
-                      React.createElement('div', { className: 'flex items-center gap-4' }, React.createElement('span', { className: 'text-[10px] font-black text-gray-500 uppercase tracking-widest' }, 'OPENING MIC:'), React.createElement('input', { type: 'text', value: openingMic, onChange: e => setOpeningMic(e.target.value), className: 'flex-1 border-b-2 border-gray-400 focus:border-[#1e293b] bg-transparent outline-none font-black text-sm text-[#1e293b] uppercase px-2 h-8 transition-colors' })),
-                      React.createElement('div', { className: 'flex items-center gap-4' }, React.createElement('span', { className: 'text-[10px] font-black text-gray-500 uppercase tracking-widest' }, 'CLOSING MIC:'), React.createElement('input', { type: 'text', value: closingMic, onChange: e => setClosingMic(e.target.value), className: 'flex-1 border-b-2 border-gray-400 focus:border-[#1e293b] bg-transparent outline-none font-black text-sm text-[#1e293b] uppercase px-2 h-8 transition-colors' }))
-                    )
-                  )
-                ))
-              )
-            )
-          );
-        }
+function updateMicName(which,val){
+  if(which==='opening')appState.openingMic=val;
+  else appState.closingMic=val;
+  save();updateMicUI();
+}
 
-        function SettingsComp({ settings, templates, setSettings, onClearHistory, onLoadTargets, pendingTargets, pendingDrops, onClearPendingData }) {
-          const [profileNameInput, setProfileNameInput] = useState('');
-          const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+function getColWidths(nDrops){
+  const W=794-24;
+  const spec=130,total=72,log=110;
+  const segs=nDrops+1;
+  const segW=Math.floor((W-spec-total-log)/segs);
+  return{spec:W-total-log-segW*segs,total,drop:segW,co:segW,log};
+}
 
-          const handleChange = (field, val) => {
-            setSettings(prev => ({ ...prev, [field]: val }));
-          };
+function renderPrepGuide(){
+  const wrap=document.getElementById('pg-pages-wrap');
+  if(!wrap)return;
+  const drops=getDropWindows();
+  const nDrops=drops.length;
+  const cw=getColWidths(nDrops);
+  const dateStr=new Date().toLocaleDateString([],{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
 
-          const isCloseTimeSet = settings.closeTime && settings.closeTime !== '00:00';
+  wrap.innerHTML='';
+  PAGES_CFG.forEach((pg,pgIdx)=>{
+    const pageEl=document.createElement('div');
+    pageEl.className='pg-page';
+    pageEl.id=`pg-page-${pgIdx}`;
 
-          const calculatedTimes = useMemo(() => {
-            if (!isCloseTimeSet) return [];
-            const n = settings.numDrops || 2;
-            const result = [];
-            const getBaseMins = (i) => {
-              if (i === 0) return 10 * 60;
-              if (i === 1) return 14 * 60;
-              if (i === 2) return 17 * 60;
-              return (17 * 60) + ((i - 2) * 120);
-            };
-            for (let i = 0; i < n; i++) {
-              const totalMins = getBaseMins(i);
-              const h = Math.floor(totalMins / 60) % 24;
-              const m = totalMins % 60;
-              result.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-            }
-            return result;
-          }, [settings.numDrops, settings.closeTime, isCloseTimeSet]);
+    // header
+    pageEl.innerHTML=`<div class="pg-page-header">
+      <div><h1>PREP GUIDE</h1><div class="sub">${pg.title}</div></div>
+      <div class="meta"><div class="store">${appState.settings.storeIdentity||'UNIT #0000'}</div><div class="date">${dateStr}</div></div>
+    </div>`;
 
-          useEffect(() => {
-            if (isCloseTimeSet) {
-              setSettings(prev => {
-                const currentCustom = prev.customDropTimes || [];
-                if (currentCustom.length !== prev.numDrops) {
-                  return { ...prev, customDropTimes: undefined };
-                }
-                return prev;
-              });
-            }
-          }, [settings.numDrops, isCloseTimeSet]);
+    // body
+    const body=document.createElement('div');
+    body.className='pg-body';
 
-          const handleTimeUpdate = (idx, newTime) => {
-            setSettings(prev => {
-              const times = prev.customDropTimes ? [...prev.customDropTimes] : [...calculatedTimes];
-              times[idx] = newTime;
-              return { ...prev, customDropTimes: times };
-            });
-          };
+    const table=document.createElement('table');
+    table.className='pg-table';
+    table.style.width=(794-24)+'px';
 
-          const handleSaveProfile = () => {
-            if (!profileNameInput.trim()) return alert("Enter a preset name.");
-            const targetsToSave = pendingTargets || {};
-            const dropsToSave = pendingDrops || undefined;
-            const newProfile = {
-              id: Math.random().toString(36).substring(7),
-              name: profileNameInput.trim(),
-              openTime: settings.openTime,
-              closeTime: settings.closeTime,
-              storeIdentity: settings.storeIdentity || 'UNNAMED UNIT',
-              numDrops: settings.numDrops,
-              targets: targetsToSave,
-              prefilledDrops: dropsToSave,
-              customDropTimes: settings.customDropTimes
-            };
-            setSettings(prev => ({
-              ...prev,
-              profiles: [...(prev.profiles || []), newProfile],
-              activeProfileId: newProfile.id
-            }));
-            setProfileNameInput('');
-            onClearPendingData();
-          };
+    // thead
+    let thHtml=`<thead><tr>
+      <th class="spec" style="width:${cw.spec}px">Specification</th>
+      <th style="width:${cw.total}px;border-right:1px solid #e5e7eb;padding:0">
+        <div style="display:flex;flex-direction:column;align-items:center;padding:6px 4px">
+          <div style="font-size:7px;color:#6366f1;font-weight:900;text-transform:uppercase;margin-bottom:3px">PROD</div>
+          <div style="background:#1e293b;color:white;padding:3px 6px;border-radius:4px;font-size:8px;font-weight:900;width:100%;text-align:center;margin-bottom:3px">START</div>
+          <div style="background:#ecfdf5;color:#059669;padding:3px 6px;border-radius:4px;font-size:8px;font-weight:900;width:100%;text-align:center;border:1px solid #d1fae5">READY</div>
+          <div style="margin-top:4px;font-size:9px;font-weight:900;font-style:italic;color:#1e293b">TOTAL</div>
+        </div>
+      </th>`;
+    drops.forEach(d=>{
+      thHtml+=`<th style="width:${cw.drop}px;border-right:1px solid #e5e7eb;padding:0">
+        <div style="display:flex;flex-direction:column;align-items:center;padding:4px">
+          <div style="font-size:6px;color:#6366f1;font-weight:900;text-transform:uppercase;margin-bottom:3px;overflow:hidden;white-space:nowrap">${d.label}</div>
+          <div style="background:#1e293b;color:white;padding:3px;border-radius:4px;font-size:8px;font-weight:900;width:100%;text-align:center;margin-bottom:2px">${d.time}</div>
+          <div style="background:#ecfdf5;color:#059669;padding:3px;border-radius:4px;font-size:8px;font-weight:900;width:100%;text-align:center;border:1px solid #d1fae5;margin-bottom:3px">${d.readyTime}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;width:100%;font-size:6px;font-weight:900;font-style:italic;color:#9ca3af;border-top:1px solid #e5e7eb">
+            <span>QTY</span><span style="border-left:1px solid #e5e7eb;padding-left:2px">DONE</span>
+          </div>
+        </div>
+      </th>`;
+    });
+    thHtml+=`<th style="width:${cw.co}px;border-right:1px solid #e5e7eb;padding:0">
+      <div style="display:flex;flex-direction:column;align-items:center;padding:4px">
+        <div style="background:#3b82f6;color:white;padding:6px 4px;border-radius:4px;font-size:8px;font-weight:900;font-style:italic;text-transform:uppercase;width:100%;text-align:center;margin-bottom:3px;line-height:1.2">CARRY<br>OVER</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;width:100%;font-size:6px;font-weight:900;font-style:italic;color:#9ca3af;border-top:1px solid #e5e7eb">
+          <span>STOCK</span><span style="border-left:1px solid #e5e7eb;padding-left:2px">DONE</span>
+        </div>
+      </div>
+    </th>
+    <th style="width:${cw.log}px;padding:0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;height:100%">
+        <div style="display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;font-style:italic;color:#6366f1;border-right:1px solid #e5e7eb;padding:8px">EXTRA</div>
+        <div style="display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;font-style:italic;color:#f43f5e;padding:8px">WASTE</div>
+      </div>
+    </th>
+    </tr></thead>`;
 
-          const handleLoadProfile = (id) => {
-            const profile = settings.profiles.find(p => p.id === id);
-            if (!profile) return;
-            setSettings(prev => ({
-              ...prev,
-              openTime: profile.openTime,
-              closeTime: profile.closeTime,
-              storeIdentity: profile.storeIdentity || prev.storeIdentity,
-              activeProfileId: profile.id,
-              numDrops: profile.numDrops || 6,
-              customDropTimes: profile.customDropTimes
-            }));
-            if (profile.targets && Object.keys(profile.targets).length > 0) {
-              onLoadTargets(profile.targets);
-            }
-          };
+    const tbody=document.createElement('tbody');
+    pg.sections.forEach(section=>{
+      const items=TEMPLATES.filter(section.matcher);
+      if(!items.length)return;
+      const secRow=document.createElement('tr');
+      secRow.innerHTML=`<td colspan="${nDrops+4}" style="background:#f1f5f9;padding:8px 16px;font-size:10px;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:0.2em;color:#1e293b;border-bottom:1px solid #e5e7eb">${section.label}</td>`;
+      tbody.appendChild(secRow);
 
-          const executeDelete = (id) => {
-            setSettings(prev => {
-              const updatedProfiles = (prev.profiles || []).filter(p => p.id !== id);
-              return {
-                ...prev,
-                profiles: updatedProfiles,
-                activeProfileId: prev.activeProfileId === id ? undefined : prev.activeProfileId
-              };
-            });
-            setConfirmDeleteId(null);
-          };
+      items.forEach(t=>{
+        const p=getPlan(t.id);
+        const e=getEntry(t.id);
+        const once=isOnceADay(t);
+        const row=document.createElement('tr');
+        row.className='item-row';
 
-          const hasPendingData = pendingTargets || pendingDrops;
+        const typeLabel=t.category==='Shells'||t.name.includes('Chips')||t.name.includes('Twists')?'FRY':t.name.includes('Rice')?'RICE COOKER':t.name.toUpperCase().includes('GUACAMOLE')?'CANTINE':t.name.toUpperCase().includes('JALAP')||t.name.toUpperCase().includes('SOUR CREAM')?'BOTTLE':t.category==='Sauces'||t.category==='Dairy'?'BOTTLE':t.cookTimeMinutes>0?'RETHERM':'INSTANT';
 
-          const currentSchedule = useMemo(() => {
-            const times = settings.customDropTimes && settings.customDropTimes.length === settings.numDrops 
-              ? settings.customDropTimes 
-              : calculatedTimes;
-            return times.map((t, i) => {
-              let label = `Drop ${i + 1}`;
-              if (i === 0) label = "Morning";
-              if (i === settings.numDrops - 1) label = "Final";
-              return { label, time: t };
-            });
-          }, [settings.customDropTimes, settings.numDrops, calculatedTimes]);
+        let html=`<td class="spec" style="width:${cw.spec}px"><div class="item-name">${t.name}</div><div class="item-sub">${t.holdTimeMinutes/60}H HOLD • ${typeLabel}</div></td>`;
+        html+=`<td style="width:${cw.total}px;border-right:1px solid #e5e7eb"><div class="need-val">${p.need}</div></td>`;
 
-          const registrySections = [
-            { label: 'High Priority Production (4H)', matcher: (m) => m <= 300, hoursLabel: '4H' },
-            { label: 'Standard Shift Supply (8H)', matcher: (m) => m > 300 && m <= 720, hoursLabel: '8H' },
-            { label: 'Extended Shelf Stability (24H)', matcher: (m) => m > 720, hoursLabel: '24H' }
-          ];
+        drops.forEach((_,dIdx)=>{
+          const drop=e.drops[dIdx]||{};
+          html+=`<td class="drop-cell" style="width:${cw.drop}px"><div class="drop-inner">
+            <input type="text" class="drop-qty" placeholder="0" value="${drop.qty||''}" oninput="updateDrop('${t.id}',${dIdx},this.value)" />
+            <div class="drop-check${drop.checked?' done':''}" id="drop-check-${t.id}-${dIdx}" onclick="toggleDrop('${t.id}',${dIdx})">✓${drop.checked&&drop.initials&&drop.initials!=='✓'?`<span class="initials">${drop.initials}</span>`:''}</div>
+          </div></td>`;
+        });
 
-          return React.createElement('div', { className: 'max-w-[1500px] mx-auto space-y-12 pb-40 pt-4' },
-            React.createElement('section', { className: 'bg-[#1e293b] rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden text-white flex flex-col md:flex-row justify-between items-center gap-12' },
-              React.createElement('div', { className: 'absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -mr-48 -mt-48 rounded-full' }),
-              React.createElement('div', { className: 'relative z-10' },
-                React.createElement('h2', { className: 'text-4xl font-black uppercase tracking-tighter italic' }, 'System Configuration'),
-                React.createElement('p', { className: 'text-[11px] font-bold text-indigo-300 uppercase tracking-[0.4em] mt-3' }, 'Global operational & Preset standards'),
-                React.createElement('div', { className: 'flex gap-10 mt-10' },
-                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-indigo-300/60 uppercase block mb-1' }, 'Stored Presets'), React.createElement('span', { className: 'text-3xl font-black tabular-nums' }, (settings.profiles?.length || 0) + ' Kitchens')),
-                  React.createElement('div', { className: 'w-px bg-white/10' }),
-                  React.createElement('div', null, React.createElement('span', { className: 'text-[10px] font-black text-indigo-300/60 uppercase block mb-1' }, 'Shift Window'), React.createElement('span', { className: 'text-3xl font-black text-[#3acfb6] tabular-nums' }, `${settings.openTime} - ${settings.closeTime}`))
-                )
-              )
-            ),
-            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-12 gap-12' },
-              React.createElement('div', { className: 'lg:col-span-8 space-y-12' },
-                React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm p-12' },
-                  React.createElement('div', { className: 'flex items-center gap-4 mb-10' }, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tighter italic' }, 'Restaurant Identity'), React.createElement('div', { className: 'h-px flex-1 bg-gray-50' })),
-                  React.createElement('div', { className: 'space-y-4' },
-                    React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2' }, 'Store Number / Shift Label'),
-                    React.createElement('input', { type: 'text', value: settings.storeIdentity || '', onChange: (e) => handleChange('storeIdentity', e.target.value), placeholder: 'E.G. UNIT #0000', className: 'w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-100 rounded-[2rem] px-10 py-8 font-black text-4xl text-[#1e293b] outline-none uppercase placeholder:text-gray-200 transition-all shadow-sm italic tracking-tighter' })
-                  )
-                ),
-                React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm overflow-hidden' },
-                  React.createElement('div', { className: 'bg-gray-50/80 px-12 py-10 border-b border-gray-100' }, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tight italic' }, 'Operational Parameters'), React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest' }, 'Window timing & Production distribution')),
-                  React.createElement('div', { className: 'p-12 space-y-16' },
-                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-12' },
-                      React.createElement('div', { className: 'space-y-4' }, React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1' }, 'Opening Identity'), React.createElement('input', { type: 'time', value: settings.openTime, onChange: (e) => handleChange('openTime', e.target.value), className: 'w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-100 rounded-2xl px-8 py-5 font-black text-xl text-[#1e293b] outline-none tabular-nums shadow-sm' })),
-                      React.createElement('div', { className: 'space-y-4' }, React.createElement('label', { className: `text-[10px] font-black uppercase tracking-widest ml-1 ${!isCloseTimeSet ? 'text-indigo-500 animate-pulse' : 'text-gray-400'}` }, 'Closing Threshold*'), React.createElement('input', { type: 'time', value: settings.closeTime, onChange: (e) => handleChange('closeTime', e.target.value), className: `w-full border-2 rounded-2xl px-8 py-5 font-black text-xl outline-none tabular-nums transition-all shadow-sm ${!isCloseTimeSet ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-gray-50 border-transparent text-[#1e293b] focus:bg-white focus:border-indigo-100'}` }))
-                    ),
-                    React.createElement('div', { className: 'space-y-10' },
-                      React.createElement('div', { className: 'flex justify-between items-end' }, React.createElement('div', { className: 'space-y-2' }, React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1' }, 'Daily Prep Frequency'), React.createElement('p', { className: 'text-4xl font-black text-[#1e293b] tabular-nums italic tracking-tighter' }, settings.numDrops + ' Cycles')), React.createElement('span', { className: 'text-[10px] font-black bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full border border-indigo-100 uppercase tracking-widest mb-2' }, 'Recommended: 6 Drops')),
-                      React.createElement('div', { className: 'px-2' }, React.createElement('input', { type: 'range', min: '2', max: '10', step: '1', disabled: !isCloseTimeSet, value: settings.numDrops, onChange: (e) => handleChange('numDrops', parseInt(e.target.value)), className: 'w-full h-4 bg-gray-100 rounded-full appearance-none cursor-pointer accent-indigo-600' }))
-                    ),
-                    isCloseTimeSet && React.createElement('div', { className: 'bg-gray-50/50 rounded-[2.5rem] p-10 border border-gray-100 space-y-8' },
-                      React.createElement('div', { className: 'flex items-center gap-3' }, React.createElement('h4', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]' }, 'Precision Schedule Editor'), React.createElement('div', { className: 'h-px flex-1 bg-gray-100' })),
-                      React.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6' }, currentSchedule.map((item, idx) => React.createElement('div', { key: idx, className: 'flex flex-col items-center bg-white p-5 rounded-2xl border border-gray-100 shadow-sm focus-within:border-indigo-400 transition-all hover:scale-105 group' }, React.createElement('span', { className: 'text-[8px] font-black uppercase mb-2 text-gray-300 tracking-tighter group-hover:text-indigo-400' }, item.label), React.createElement('input', { type: 'time', value: item.time, onChange: (e) => handleTimeUpdate(idx, e.target.value), className: 'w-full bg-transparent border-none text-center text-sm font-black text-[#1e293b] outline-none tabular-nums cursor-pointer' }))))
-                    )
-                  )
-                )
-              ),
-              React.createElement('div', { className: 'lg:col-span-4 space-y-12' },
-                React.createElement('section', { className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm p-12 flex flex-col h-full' },
-                  React.createElement('div', { className: 'flex justify-between items-center mb-10' }, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tight italic' }, 'Kitchen Presets'), hasPendingData && React.createElement('span', { className: 'bg-pink-50 text-pink-500 border border-pink-100 text-[8px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse' }, 'Pending Data')),
-                  React.createElement('div', { className: 'space-y-6 flex-1' },
-                    React.createElement('div', { className: 'space-y-3' },
-                      React.createElement('label', { className: 'text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1' }, 'New Configuration Name'),
-                      React.createElement('div', { className: 'flex flex-col gap-4' },
-                        React.createElement('input', { type: 'text', value: profileNameInput, onChange: (e) => setProfileNameInput(e.target.value), placeholder: 'ENTER NAME...', className: 'w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-indigo-100 rounded-2xl px-6 py-4 font-black text-sm text-[#1e293b] outline-none uppercase placeholder:text-gray-200 transition-all' }),
-                        React.createElement('button', { onClick: handleSaveProfile, className: 'w-full py-5 bg-[#1e293b] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-black active:scale-95 transition-all' }, 'Store New Preset')
-                      )
-                    ),
-                    React.createElement('div', { className: 'h-px bg-gray-50 my-10' }),
-                    React.createElement('div', { className: 'space-y-4 custom-scrollbar max-h-[600px] overflow-y-auto pr-2' },
-                      (!settings.profiles || settings.profiles.length === 0) ? React.createElement('div', { className: 'py-20 text-center opacity-30 flex flex-col items-center' }, React.createElement('svg', { className: 'w-10 h-10 mb-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '2.5', d: 'M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01' })), React.createElement('p', { className: 'text-[10px] font-black uppercase tracking-[0.3em]' }, 'No Saved Presets')) :
-                      settings.profiles.map(profile => React.createElement('div', { key: profile.id, className: `flex justify-between items-center p-6 rounded-[2rem] border-2 transition-all group ${settings.activeProfileId === profile.id ? 'border-indigo-500 bg-indigo-50/20' : 'border-gray-50 bg-gray-50/50 hover:border-indigo-100'}` },
-                        React.createElement('div', { className: 'flex flex-col' }, React.createElement('span', { className: 'text-sm font-black uppercase text-[#1e293b] italic tracking-tight' }, profile.name), React.createElement('span', { className: 'text-[9px] font-bold text-gray-400 uppercase mt-1' }, `${profile.numDrops} Drop Configuration`)),
-                        React.createElement('div', { className: 'flex gap-2' },
-                          confirmDeleteId !== profile.id ? React.createElement(React.Fragment, null,
-                            React.createElement('button', { onClick: () => handleLoadProfile(profile.id), className: 'bg-white border border-gray-200 text-[#1e293b] p-3 rounded-xl shadow-sm hover:border-indigo-400 hover:scale-110 transition-all', title: 'Load' }, React.createElement('svg', { className: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '3', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' }))),
-                            React.createElement('button', { onClick: () => setConfirmDeleteId(profile.id), className: 'bg-white border border-gray-200 text-red-400 p-3 rounded-xl shadow-sm hover:border-red-400 hover:scale-110 transition-all', title: 'Delete' }, React.createElement('svg', { className: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, React.createElement('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '3', d: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' })))
-                          ) : React.createElement('div', { className: 'flex gap-1 animate-in slide-in-from-right-2' },
-                            React.createElement('button', { onClick: () => setConfirmDeleteId(null), className: 'bg-gray-200 text-gray-500 px-3 py-2 rounded-lg text-[8px] font-black uppercase' }, 'Cancel'),
-                            React.createElement('button', { onClick: () => executeDelete(profile.id), className: 'bg-red-600 text-white px-4 py-2 rounded-lg text-[8px] font-black uppercase shadow-lg animate-pulse' }, 'Confirm')
-                          )
-                        )
-                      ))
-                    )
-                  )
-                )
-              )
-            ),
-            React.createElement('div', { className: 'space-y-16 mt-12 animate-in fade-in duration-500' },
-              React.createElement('div', { className: 'flex items-center gap-4 px-4' }, React.createElement('h2', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tighter italic' }, 'Product Registry'), React.createElement('div', { className: 'h-px flex-1 bg-gray-100' })),
-              registrySections.map(section => {
-                const filteredItems = templates.filter(t => section.matcher(t.holdTimeMinutes));
-                if (filteredItems.length === 0) return null;
-                return React.createElement('div', { key: section.hoursLabel, className: 'bg-white rounded-[3.5rem] border border-gray-100 shadow-sm overflow-hidden' },
-                  React.createElement('div', { className: 'bg-gray-50/80 px-12 py-10 border-b border-gray-100 flex justify-between items-center' },
-                    React.createElement('div', null, React.createElement('h3', { className: 'text-xl font-black text-[#1e293b] uppercase tracking-tight italic' }, section.label), React.createElement('p', { className: 'text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest' }, `${section.hoursLabel} Safety Standards`)),
-                    React.createElement('span', { className: 'bg-white px-6 py-2 rounded-full border border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest shadow-sm' }, `${filteredItems.length} Registry Entries`)
-                  ),
-                  React.createElement('div', { className: 'overflow-x-auto' },
-                    React.createElement('table', { className: 'w-full text-left' },
-                      React.createElement('thead', { className: 'bg-white' }, React.createElement('tr', { className: 'text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]' }, React.createElement('th', { className: 'px-12 py-10' }, 'Product Specification'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Prep Duration'), React.createElement('th', { className: 'px-6 py-10 text-center w-48' }, 'Hold Standard'))),
-                      React.createElement('tbody', { className: 'divide-y divide-gray-50' }, filteredItems.map(template => {
-                        const holdHours = template.holdTimeMinutes / 60;
-                        const prepDisplay = template.cookTimeMinutes >= 60 ? `${template.cookTimeMinutes / 60}H` : `${template.cookTimeMinutes}M`;
-                        return React.createElement('tr', { key: template.id, className: 'hover:bg-indigo-50/5 transition-colors group' },
-                          React.createElement('td', { className: 'px-12 py-10' }, React.createElement('span', { className: 'block font-black text-[#1e293b] text-lg uppercase leading-tight tracking-tight italic' }, template.name), React.createElement('span', { className: 'text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2 block' }, `Registry Group: ${template.category}`)),
-                          React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('span', { className: 'inline-block px-5 py-2.5 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xs tabular-nums uppercase border border-indigo-100' }, `${prepDisplay} Window`)),
-                          React.createElement('td', { className: 'px-6 py-10 text-center' }, React.createElement('span', { className: 'inline-block px-5 py-2.5 bg-gray-100 text-gray-600 rounded-2xl font-black text-xs tabular-nums uppercase border border-gray-200' }, `${Number.isInteger(holdHours) ? holdHours : holdHours.toFixed(1)}H Safety`))
-                        );
-                      }))
-                    )
-                  )
-                );
-              })
-            ),
-            React.createElement('section', { className: 'bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-sm flex flex-col items-center' },
-              React.createElement('h3', { className: 'text-red-600 font-black uppercase italic mb-4' }, 'Danger Zone'),
-              React.createElement('button', { onClick: onClearHistory, className: 'bg-red-50 text-red-600 px-10 py-4 rounded-2xl font-black uppercase text-[10px] hover:bg-red-100 transition-all' }, 'Purge Entire System History')
-            )
-          );
-        }
+        html+=`<td class="co-cell" style="width:${cw.co}px"><div class="co-inner">
+          <div class="co-val">${p.carryOver}</div>
+          <div class="co-check${e.coChecked?' done':''}" id="co-check-${t.id}" onclick="toggleCO('${t.id}')">✓</div>
+        </div></td>`;
+        html+=`<td class="log-cell" style="width:${cw.log}px"><div class="log-inner">
+          <input type="text" class="log-input extra" placeholder="+" value="${e.unplanned||''}" oninput="updateLog('${t.id}','unplanned',this.value)" />
+          <input type="text" class="log-input waste" placeholder="-" value="${e.waste||''}" oninput="updateLog('${t.id}','waste',this.value)" />
+        </div></td>`;
 
-        // --- MAIN APPLICATION ---
+        row.innerHTML=html;
+        tbody.appendChild(row);
+      });
+    });
 
-        function MainApp() {
-          const [activeTab, setActiveTab] = useState('metrics'), [currentTime, setCurrentTime] = useState(Date.now()), [isInitializing, setIsInitializing] = useState(true);
-          const [templates, setTemplates] = useState(INITIAL_TEMPLATES), [settings, setSettings] = useState(DEFAULT_SETTINGS), [plan, setPlan] = useState([]), [activePreps, setActivePreps] = useState([]), [savedSheets, setSavedSheets] = useState([]), [workbookData, setWorkbookData] = useState({});
-          const [pendingTargets, setPendingTargets] = useState(null), [pendingDrops, setPendingDrops] = useState(null);
+    table.innerHTML=thHtml;
+    table.appendChild(tbody);
+    body.appendChild(table);
+    pageEl.appendChild(body);
 
-          useEffect(() => {
-            const load = (k, d) => { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : d; } catch(e) { return d; }};
-            setSettings(load('restaurantSettings', DEFAULT_SETTINGS)); setPlan(load('currentPlan', [])); setActivePreps(load('activePreps', [])); setSavedSheets(load('savedSheets', [])); setWorkbookData(load('workbookData', {}));
-            setIsInitializing(false); const int = setInterval(() => setCurrentTime(Date.now()), 1000); return () => clearInterval(int);
-          }, []);
+    // footer
+    const footer=document.createElement('div');
+    footer.className='pg-footer';
+    footer.innerHTML=`
+      <div class="pg-notes">
+        <span class="pg-notes-label">Shift Manager Notes</span>
+        <textarea placeholder="ENTER SHIFT NOTES...">${appState.footerNotes[pgIdx]||''}</textarea>
+      </div>
+      <div class="pg-sigs">
+        <div class="pg-sig-row">
+          <span class="pg-sig-label">Opening Mic:</span>
+          <input type="text" class="pg-sig-input" value="${appState.openingMic||''}" oninput="updateMicName('opening',this.value)" />
+        </div>
+        <div class="pg-sig-row">
+          <span class="pg-sig-label">Closing Mic:</span>
+          <input type="text" class="pg-sig-input" value="${appState.closingMic||''}" oninput="updateMicName('closing',this.value)" />
+        </div>
+      </div>`;
+    footer.querySelector('textarea').addEventListener('input',function(){appState.footerNotes[pgIdx]=this.value;save()});
+    pageEl.appendChild(footer);
+    wrap.appendChild(pageEl);
+  });
 
-          useEffect(() => {
-            if (!isInitializing) { localStorage.setItem('restaurantSettings', JSON.stringify(settings)); localStorage.setItem('currentPlan', JSON.stringify(plan)); localStorage.setItem('activePreps', JSON.stringify(activePreps)); localStorage.setItem('savedSheets', JSON.stringify(savedSheets)); localStorage.setItem('workbookData', JSON.stringify(workbookData)); }
-          }, [settings, plan, activePreps, savedSheets, workbookData, isInitializing]);
+  updateMicUI();
+  scalePages();
+}
 
-          const onClearHistory = () => { localStorage.clear(); setSavedSheets([]); setPlan([]); setActivePreps([]); setWorkbookData({}); setSettings(DEFAULT_SETTINGS); setPendingTargets(null); setPendingDrops(null); setActiveTab('metrics'); alert("Purged."); };
-          const onDeleteSheet = (id) => setSavedSheets(prev => prev.filter(x => x.id !== id));
-          const handleTransferToSettings = (targets, drops) => {
-            setPendingTargets(targets);
-            setPendingDrops(drops);
-            setActiveTab('settings');
-          };
-          const handleLoadTargets = (targets) => {
-            const newPlan = templates.map(t => ({
-              templateId: t.id,
-              target: targets[t.id] || 0,
-              carryOver: 0,
-              need: targets[t.id] || 0
-            }));
-            setPlan(newPlan);
-            alert("Pattern Applied to Current Shift.");
-          };
+function scalePages(){
+  const wrap=document.getElementById('pg-pages-wrap');if(!wrap)return;
+  const avail=wrap.parentElement.clientWidth-64;
+  const scale=avail<794?avail/794:1;
+  document.querySelectorAll('.pg-page').forEach(p=>{p.style.transform=`scale(${scale})`;p.style.marginBottom=scale<1?`${-(1123*(1-scale)+32)}px`:'0'});
+  wrap.style.alignItems=scale<1?'flex-start':'center';
+}
 
-          if (isInitializing) return React.createElement('div', { className: 'min-h-screen bg-[#1e293b] flex items-center justify-center' }, React.createElement('div', { className: 'w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin' }));
+async function generatePDF(){
+  const btn=document.getElementById('gen-pdf-btn');
+  btn.textContent='Generating…';btn.disabled=true;
+  try{
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({unit:'px',format:[794,1123],orientation:'portrait',compress:true});
+    const pages=document.querySelectorAll('.pg-page');
+    for(let i=0;i<pages.length;i++){
+      const pg=pages[i];
+      const orig={transform:pg.style.transform,borderRadius:pg.style.borderRadius,boxShadow:pg.style.boxShadow,margin:pg.style.marginBottom};
+      pg.style.transform='none';pg.style.borderRadius='0';pg.style.boxShadow='none';pg.style.marginBottom='0';
+      const canvas=await html2canvas(pg,{scale:2,useCORS:true,logging:false,width:794,height:1123});
+      pg.style.transform=orig.transform;pg.style.borderRadius=orig.borderRadius;pg.style.boxShadow=orig.boxShadow;pg.style.marginBottom=orig.margin;
+      const img=canvas.toDataURL('image/jpeg',1.0);
+      if(i>0)pdf.addPage([794,1123],'portrait');
+      pdf.addImage(img,'JPEG',0,0,794,1123);
+    }
+    const dateStr=new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}).toUpperCase().replace(/ /g,'_');
+    pdf.save(`Prep_Guide_${dateStr}.pdf`);
+    toast('PDF saved!');
+  }catch(err){toast('PDF error: '+err.message);console.error(err)}
+  btn.textContent='Generate PDF';btn.disabled=false;
+}
 
-          return React.createElement('div', { className: 'min-h-screen flex flex-col' },
-            React.createElement(Header, { currentTime, activeTab, setActiveTab }),
-            React.createElement('main', { className: 'flex-1 p-6 max-w-[1600px] mx-auto w-full' },
-              activeTab === 'metrics' && React.createElement(Forecasting, { templates, savedSheets, activePreps, onRemovePrep: id => setActivePreps(p => p.filter(x => x.id !== id)), currentTime, onClearHistory, onDeleteSheet }),
-              activeTab === 'planner' && React.createElement(PrepPlanner, { templates, plan, onUpdatePlan: setPlan }),
-              activeTab === 'prepguide' && React.createElement(PrintGuide, { templates, settings, plan, workbook: workbookData, onUpdateWorkbook: setWorkbookData, onSaveSheet: s => setSavedSheets(p => [s, ...p]), onTransferToSettings: handleTransferToSettings }),
-              activeTab === 'settings' && React.createElement(SettingsComp, { settings, templates, setSettings, onClearHistory, onLoadTargets: handleLoadTargets, pendingTargets, pendingDrops, onClearPendingData: () => { setPendingTargets(null); setPendingDrops(null); } })
-            )
-          );
-        }
+function saveToPreset(){
+  const targets={},drops={};
+  appState.plan.forEach(p=>{if(p.target>0)targets[p.templateId]=p.target});
+  Object.entries(appState.workbook).forEach(([tid,data])=>{
+    const itemDrops={};let has=false;
+    if(data.drops)Object.entries(data.drops).forEach(([idx,e])=>{if(e.qty&&e.qty!=='0'){itemDrops[parseInt(idx)]=e.qty;has=true}});
+    if(has)drops[tid]=itemDrops;
+  });
+  appState.pendingTargets=Object.keys(targets).length?targets:null;
+  appState.pendingDrops=Object.keys(drops).length?drops:null;
+  save();toast('Pattern ready. Go to Config to save as preset.');
+  document.getElementById('cfg-pending-badge').style.display='inline';
+}
 
-        const rootEl = document.getElementById('root');
-        if (rootEl) createRoot(rootEl).render(React.createElement(MainApp));
-    </script>
+function verifyDay(){
+  // check all filled drops are checked
+  for(const pg of PAGES_CFG){for(const sec of pg.sections){for(const t of TEMPLATES.filter(sec.matcher)){
+    const e=getEntry(t.id);const drops=getDropWindows();
+    for(let i=0;i<drops.length;i++){
+      const d=e.drops[i];
+      if(d?.qty&&d.qty!=='0'&&d.qty!==''&&!d.checked){toast('All checkmarks must be ticked before verifying.');return}
+    }
+  }}}
+  const todayISO=new Date().toISOString().split('T')[0];
+  const finalPlan=TEMPLATES.map(t=>{
+    const p=getPlan(t.id);const e=getEntry(t.id);
+    let prod=0;if(e.drops)Object.values(e.drops).forEach(d=>prod+=parseInt(d.qty)||0);
+    return{templateId:t.id,target:p.target,actualProduced:prod,actualWaste:parseInt(e.waste)||0,unplanned:parseInt(e.unplanned)||0};
+  });
+  appState.sheets.push({id:Date.now().toString(),date:todayISO,storeIdentity:appState.settings.storeIdentity||'UNIT #0000',plan:finalPlan,totalProduced:finalPlan.reduce((a,b)=>a+(b.actualProduced||0),0),totalWaste:finalPlan.reduce((a,b)=>a+(b.actualWaste||0),0)});
+  appState.workbook={};appState.footerNotes=['',''];
+  save();renderPrepGuide();toast('Audit record stored. Sheet reset for next cycle.');
+}
+
+// ══════════════════════ CONFIG ══════════════════════
+function getCalcTimes(){
+  const n=appState.settings.numDrops||6;
+  const openMins=parseTime(appState.settings.openTime||'10:00');
+  const rawClose=parseTime(appState.settings.closeTime||'00:00')||1440;
+  const adjustedClose=rawClose<=openMins?rawClose+1440:rawClose;
+  const firstDrop=openMins-60;
+  const lastAllowed=adjustedClose-60;
+  return Array.from({length:n},(_,i)=>{
+    const mins=firstDrop+i*180;
+    const capped=i===n-1?Math.min(mins,lastAllowed):mins;
+    return formatTime(capped);
+  });
+}
+
+function renderSchedule(){
+  const wrap=document.getElementById('cfg-schedule-wrap');if(!wrap)return;
+  const n=appState.settings.numDrops||6;
+  const custom=appState.settings.customDropTimes;
+  const base=getCalcTimes();
+  const times=(custom&&custom.length===n)?custom:base;
+  const labels=times.map((_,i)=>i===0?'Morning':i===n-1?'Final':`Drop ${i+1}`);
+  wrap.innerHTML=`<div style="font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:0.25em;margin-bottom:10px">Precision Schedule Editor</div><div class="schedule-grid">${times.map((t,i)=>`<div class="schedule-item"><div class="si-label">${labels[i]}</div><input type="time" value="${t}" oninput="updateDropTime(${i},this.value)" /></div>`).join('')}</div>`;
+  const s=appState.settings;
+  document.getElementById('cfg-shift-window').textContent=`${s.openTime||'—'} - ${s.closeTime||'—'}`;
+}
+
+function updateDropTime(idx,val){
+  const n=appState.settings.numDrops||6;
+  const base=getCalcTimes();
+  const custom=appState.settings.customDropTimes&&appState.settings.customDropTimes.length===n?[...appState.settings.customDropTimes]:[...base];
+  custom[idx]=val;appState.settings.customDropTimes=custom;save();
+}
+
+function onDropsChange(val){
+  appState.settings.numDrops=parseInt(val);
+  appState.settings.customDropTimes=[];
+  save();
+  document.getElementById('cfg-drops-val').textContent=val;
+  renderSchedule();
+}
+
+function savePreset(){
+  const name=document.getElementById('cfg-preset-name').value.trim();
+  if(!name){toast('Enter a preset name.');return}
+  const preset={id:Math.random().toString(36).slice(2),name,openTime:appState.settings.openTime,closeTime:appState.settings.closeTime,storeIdentity:appState.settings.storeIdentity||'',numDrops:appState.settings.numDrops,customDropTimes:appState.settings.customDropTimes,targets:appState.pendingTargets||{},prefilledDrops:appState.pendingDrops||undefined};
+  appState.settings.profiles=[...(appState.settings.profiles||[]),preset];
+  appState.settings.activeProfileId=preset.id;
+  appState.pendingTargets=null;appState.pendingDrops=null;
+  save();document.getElementById('cfg-preset-name').value='';document.getElementById('cfg-pending-badge').style.display='none';
+  renderConfig();toast(`Preset "${name}" saved.`);
+}
+
+let confirmDeleteId=null;
+function deletePreset(id){
+  if(confirmDeleteId===id){
+    appState.settings.profiles=(appState.settings.profiles||[]).filter(p=>p.id!==id);
+    if(appState.settings.activeProfileId===id)appState.settings.activeProfileId=null;
+    confirmDeleteId=null;save();renderConfig();
+  } else {confirmDeleteId=id;renderConfig()}
+}
+
+function loadPreset(id){
+  const p=(appState.settings.profiles||[]).find(x=>x.id===id);if(!p)return;
+  appState.settings.openTime=p.openTime;appState.settings.closeTime=p.closeTime;
+  appState.settings.storeIdentity=p.storeIdentity||appState.settings.storeIdentity;
+  appState.settings.activeProfileId=p.id;appState.settings.numDrops=p.numDrops||6;
+  appState.settings.customDropTimes=p.customDropTimes;
+  if(p.targets&&Object.keys(p.targets).length){Object.entries(p.targets).forEach(([tid,target])=>{const ex=appState.plan.find(x=>x.templateId===tid);if(ex){ex.target=target;ex.need=Math.max(0,target-ex.carryOver)}else appState.plan.push({templateId:tid,target,carryOver:0,need:target})})}
+  if(p.prefilledDrops){Object.entries(p.prefilledDrops).forEach(([tid,dropsObj])=>{const drops={};Object.entries(dropsObj).forEach(([idx,qty])=>{drops[parseInt(idx)]={qty:String(qty),checked:false}});appState.workbook[tid]={drops,coChecked:false,waste:'',unplanned:''}})}
+  save();renderConfig();updateHeader();toast(`Preset "${p.name}" loaded.`);
+}
+
+function renderConfig(){
+  // populate fields
+  const s=appState.settings;
+  document.getElementById('cfg-store').value=s.storeIdentity||'';
+  document.getElementById('cfg-open').value=s.openTime||'10:00';
+  document.getElementById('cfg-close').value=s.closeTime||'00:00';
+  document.getElementById('cfg-drops-range').value=s.numDrops||6;
+  document.getElementById('cfg-drops-val').textContent=s.numDrops||6;
+  document.getElementById('cfg-preset-count').textContent=`${(s.profiles||[]).length} Kitchens`;
+  document.getElementById('cfg-shift-window').textContent=`${s.openTime||'—'} - ${s.closeTime||'—'}`;
+  if(appState.pendingTargets||appState.pendingDrops)document.getElementById('cfg-pending-badge').style.display='inline';
+  renderSchedule();
+
+  // presets
+  const pl=document.getElementById('cfg-presets-list');
+  if(!(s.profiles||[]).length){pl.innerHTML='<div class="empty-state" style="padding:40px">No Saved Presets</div>';return}
+  pl.innerHTML=(s.profiles||[]).map(p=>`<div class="preset-item${s.activeProfileId===p.id?' active-preset':''}">
+    <div class="preset-item-info"><div class="pname">${p.name}</div><div class="psub">${p.numDrops||6} Drop Configuration</div></div>
+    <div class="preset-actions">
+      ${confirmDeleteId===p.id?`<div class="confirm-del"><button class="confirm-cancel" onclick="confirmDeleteId=null;renderConfig()">Cancel</button><button class="confirm-ok" onclick="deletePreset('${p.id}')">Confirm</button></div>`:`<button class="preset-btn" onclick="loadPreset('${p.id}')" title="Load">⬆</button><button class="preset-btn del" onclick="deletePreset('${p.id}')" title="Delete">✕</button>`}
+    </div>
+  </div>`).join('');
+
+  // registry
+  const regSections=[{label:'High Priority Production (4H)',matcher:m=>m<=300,hours:'4H'},{label:'Standard Shift Supply (8H)',matcher:m=>m>300&&m<=720,hours:'8H'},{label:'Extended Shelf Stability (24H)',matcher:m=>m>720,hours:'24H'}];
+  document.getElementById('cfg-registry').innerHTML=regSections.map(sec=>{
+    const items=TEMPLATES.filter(t=>sec.matcher(t.holdTimeMinutes));
+    if(!items.length)return'';
+    return`<div class="product-registry" style="margin-bottom:20px">
+      <div class="card-header"><div><h3>${sec.label}</h3><p>${sec.hours} Safety Standards</p></div><span style="font-size:9px;font-weight:900;color:#9ca3af;text-transform:uppercase;background:white;padding:6px 14px;border-radius:999px;border:1px solid #f1f5f9">${items.length} Registry Entries</span></div>
+      <table class="reg-table"><thead><tr><th>Product Specification</th><th style="text-align:center;width:160px">Prep Duration</th><th style="text-align:center;width:160px">Hold Standard</th></tr></thead>
+      <tbody>${items.map(t=>{const hh=t.holdTimeMinutes/60;const prep=t.cookTimeMinutes>=60?`${t.cookTimeMinutes/60}H`:`${t.cookTimeMinutes}M`;return`<tr><td><div class="reg-name">${t.name}</div><div class="reg-cat">Registry Group: ${t.category}</div></td><td style="text-align:center"><span class="reg-badge prep">${prep} Window</span></td><td style="text-align:center"><span class="reg-badge hold">${Number.isInteger(hh)?hh:hh.toFixed(1)}H Safety</span></td></tr>`}).join('')}
+      </tbody></table></div>`
+  }).join('');
+}
+
+// ══════════════════════ INIT ══════════════════════
+// run after full DOM parse
+load();
+updateHeader();
+renderDashboard();
+window.addEventListener('resize',()=>{
+  if(document.getElementById('tab-prepguide').classList.contains('active'))scalePages();
+  drawTrend(calcAnalytics().history);
+});
+</script>
 </body>
 </html>
